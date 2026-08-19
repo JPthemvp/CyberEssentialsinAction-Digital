@@ -209,7 +209,6 @@ export default function PlayPage() {
   if (!room || !player) {
     return (
       <div style={{ minHeight: '100vh', background: '#0f0f1a', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
-        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🛡️</div>
         <p style={{ color: '#94a3b8', fontSize: '1.2rem' }}>Connecting to game...</p>
       </div>
     );

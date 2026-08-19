@@ -503,7 +503,6 @@ export default function HostPage() {
               </div>
             </div>
             <p style={{ fontSize: '1.4rem', fontWeight: 600, color: '#e2e8f0', marginBottom: '1.25rem', lineHeight: 1.4 }}>{shuffledQ.question}</p>
-            <div style={{ color: '#64748b', fontSize: '0.8rem', marginBottom: '0.5rem' }}>📊 Live responses (correct answer hidden)</div>
             <VerticalBarChart distribution={answerDistribution} totalPlayers={nonHostPlayers.length} showCorrect={false} />
           </div>
         )}
