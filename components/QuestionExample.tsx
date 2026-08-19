@@ -338,6 +338,10 @@ const scenes: Record<string, React.ReactNode> = {
   ),
 };
 
+export function hasExample(questionId: string): boolean {
+  return questionId in scenes;
+}
+
 export function QuestionExample({ questionId, className }: { questionId: string; className?: string }) {
   const scene = scenes[questionId];
   if (!scene) return null;

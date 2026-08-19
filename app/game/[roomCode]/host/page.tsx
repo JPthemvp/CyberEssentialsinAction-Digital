@@ -11,7 +11,7 @@ import {
   type QuestScenario, type Difficulty,
 } from '@/lib/game-data';
 import { getSpeedTier } from '@/lib/game-utils';
-import { QuestionExample } from '@/components/QuestionExample';
+import { QuestionExample, hasExample } from '@/components/QuestionExample';
 import { ScenarioAnimation } from '@/components/ScenarioAnimation';
 
 const supabase = createClient(
@@ -71,15 +71,15 @@ function VerticalBarChart({ distribution, totalPlayers, showCorrect = true }: {
 }) {
   const max = Math.max(...distribution.map(d => d.count), 1);
   return (
-    <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', height: 140, padding: '0 0.5rem' }}>
+    <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', height: 240, padding: '0 0.5rem' }}>
       {distribution.map(d => {
         const pct = d.count / max;
         const barH = Math.max(pct * 100, d.count > 0 ? 8 : 0);
         const highlight = showCorrect && d.isCorrect;
         return (
           <div key={d.index} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
-            <span style={{ color: '#e2e8f0', fontWeight: 800, fontSize: '1.1rem' }}>{d.count}</span>
-            <div style={{ width: '100%', position: 'relative', height: 100, display: 'flex', alignItems: 'flex-end' }}>
+            <span style={{ color: '#e2e8f0', fontWeight: 800, fontSize: '1.2rem' }}>{d.count}</span>
+            <div style={{ width: '100%', position: 'relative', height: 170, display: 'flex', alignItems: 'flex-end' }}>
               <div style={{
                 width: '100%', background: highlight ? '#22c55e' : OPTION_COLORS[d.index],
                 height: `${barH}%`, borderRadius: '6px 6px 0 0',
@@ -562,8 +562,8 @@ export default function HostPage() {
                   <QuestionExample questionId={CYBER_ATTACK_QUESTIONS[room.current_question_index]?.id} />
                 )}
 
-                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginTop: '1.25rem' }}>
-                  {room.status === 'reveal' && (
+                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginTop: '2rem' }}>
+                  {room.status === 'reveal' && hasExample(CYBER_ATTACK_QUESTIONS[room.current_question_index]?.id) && (
                     <button onClick={showExample} style={{ ...orangeBtn, flex: '1 1 auto' }}>📸 Show Real-World Example</button>
                   )}
                   <button onClick={showLeaderboard} style={greenBtn}>📊 Leaderboard</button>
