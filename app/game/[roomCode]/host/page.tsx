@@ -318,6 +318,32 @@ export default function HostPage() {
         </div>
       </div>
 
+      {/* ── Join Banner — always visible so players can scan/click to join ── */}
+      {room.status !== 'ended' && (
+        <div style={{ background: 'rgba(99,102,241,0.1)', borderBottom: '1px solid rgba(99,102,241,0.2)', padding: '0.75rem 2rem', display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
+          {/* QR code pointing to the join URL with code pre-filled */}
+          {typeof window !== 'undefined' && (() => {
+            const joinUrl = `${window.location.origin}/game?code=${roomCode}`;
+            const qr = `https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(joinUrl)}&margin=2&bgcolor=ffffff`;
+            return (
+              <div style={{ background: '#fff', borderRadius: '0.5rem', padding: '4px', display: 'inline-block', flexShrink: 0 }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={qr} alt="Join QR" width={80} height={80} style={{ display: 'block', borderRadius: '0.25rem' }} />
+              </div>
+            );
+          })()}
+          <div>
+            <div style={{ color: '#a5b4fc', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.2rem' }}>📱 Players — scan or visit:</div>
+            <div style={{ color: '#fff', fontWeight: 800, fontSize: '0.95rem', marginBottom: '0.2rem' }}>
+              {typeof window !== 'undefined' ? `${window.location.host}/game` : '/game'}
+              <span style={{ color: '#6366f1', marginLeft: '0.4rem' }}>→ enter code</span>
+              <span style={{ background: '#6366f1', color: '#fff', borderRadius: '0.4rem', padding: '0.1rem 0.55rem', marginLeft: '0.5rem', letterSpacing: '0.2em', fontSize: '1.05rem', fontFamily: 'monospace' }}>{roomCode}</span>
+            </div>
+            <div style={{ color: '#64748b', fontSize: '0.78rem' }}>QR code auto-fills the room code — players just tap Join</div>
+          </div>
+        </div>
+      )}
+
       <div style={{ padding: '1.5rem 2rem', maxWidth: 1100, margin: '0 auto' }}>
 
         {/* ── LOBBY ── */}

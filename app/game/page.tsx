@@ -2,8 +2,8 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { SECTORS } from '@/lib/game-data';
 import { generateRoomCode } from '@/lib/game-utils';
 import { createClient } from '@supabase/supabase-js';
@@ -17,8 +17,9 @@ function getSupabase() {
 
 type Step = 'home' | 'sector' | 'setup' | 'join';
 
-export default function GameHomePage() {
+function GameHomePageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [step, setStep] = useState<Step>('home');
   const [selectedSector, setSelectedSector] = useState('');
   const [hostName, setHostName] = useState('');
@@ -26,6 +27,15 @@ export default function GameHomePage() {
   const [joinCode, setJoinCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Pre-fill room code from QR code URL param and jump to join step
+  useEffect(() => {
+    const code = searchParams.get('code');
+    if (code) {
+      setJoinCode(code.toUpperCase());
+      setStep('join');
+    }
+  }, [searchParams]);
 
   async function createRoom() {
     if (!hostName.trim()) { setError('Please enter your name'); return; }
@@ -321,6 +331,14 @@ export default function GameHomePage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function GameHomePage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#0f0f1a', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>Loading…</div>}>
+      <GameHomePageInner />
+    </Suspense>
   );
 }
 
