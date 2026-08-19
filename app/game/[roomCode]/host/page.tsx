@@ -12,6 +12,7 @@ import {
 } from '@/lib/game-data';
 import { getSpeedTier } from '@/lib/game-utils';
 import { QuestionExample } from '@/components/QuestionExample';
+import { ScenarioAnimation } from '@/components/ScenarioAnimation';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
@@ -19,7 +20,7 @@ const supabase = createClient(
 );
 
 type GameMode = 'attack' | 'quest';
-type GameStatus = 'lobby' | 'question' | 'reveal' | 'leaderboard' | 'ended';
+type GameStatus = 'lobby' | 'question' | 'reveal' | 'reveal_example' | 'leaderboard' | 'ended';
 
 interface Player { id: string; player_name: string; score: number; avatar_color: string; is_host: boolean; last_seen_at: string | null; }
 interface Room { room_code: string; sector: string; mode: GameMode; status: GameStatus; current_question_index: number; current_scenario_id: string | null; question_started_at: string | null; difficulty: Difficulty; }
@@ -63,9 +64,10 @@ function CircularTimer({ timeLeft, totalTime }: { timeLeft: number; totalTime: n
 }
 
 // ─── Vertical bar chart for attack answers ────────────────────────────────────
-function VerticalBarChart({ distribution, totalPlayers }: {
+function VerticalBarChart({ distribution, totalPlayers, showCorrect = true }: {
   distribution: { index: number; count: number; isCorrect: boolean }[];
   totalPlayers: number;
+  showCorrect?: boolean;
 }) {
   const max = Math.max(...distribution.map(d => d.count), 1);
   return (
@@ -73,21 +75,22 @@ function VerticalBarChart({ distribution, totalPlayers }: {
       {distribution.map(d => {
         const pct = d.count / max;
         const barH = Math.max(pct * 100, d.count > 0 ? 8 : 0);
+        const highlight = showCorrect && d.isCorrect;
         return (
           <div key={d.index} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
             <span style={{ color: '#e2e8f0', fontWeight: 800, fontSize: '1.1rem' }}>{d.count}</span>
             <div style={{ width: '100%', position: 'relative', height: 100, display: 'flex', alignItems: 'flex-end' }}>
               <div style={{
-                width: '100%', background: d.isCorrect ? '#22c55e' : OPTION_COLORS[d.index],
+                width: '100%', background: highlight ? '#22c55e' : OPTION_COLORS[d.index],
                 height: `${barH}%`, borderRadius: '6px 6px 0 0',
-                boxShadow: d.isCorrect ? '0 0 16px rgba(34,197,94,0.5)' : undefined,
+                boxShadow: highlight ? '0 0 16px rgba(34,197,94,0.5)' : undefined,
                 transition: 'height 0.6s cubic-bezier(0.34,1.56,0.64,1)',
                 minHeight: d.count > 0 ? 6 : 0,
               }} />
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
               <span style={{ background: OPTION_COLORS[d.index], borderRadius: '0.25rem', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.75rem', flexShrink: 0 }}>{OPTION_LABELS[d.index]}</span>
-              {d.isCorrect && <span style={{ color: '#4ade80', fontSize: '0.85rem' }}>✓</span>}
+              {highlight && <span style={{ color: '#4ade80', fontSize: '0.85rem' }}>✓</span>}
             </div>
             {totalPlayers > 0 && <span style={{ color: '#64748b', fontSize: '0.75rem' }}>{Math.round(d.count / totalPlayers * 100)}%</span>}
           </div>
@@ -222,6 +225,10 @@ export default function HostPage() {
         await loadPlayers();
       }
     }
+  }
+
+  async function showExample() {
+    await updateRoom({ status: 'reveal_example' });
   }
 
   async function showLeaderboard() {
@@ -459,18 +466,19 @@ export default function HostPage() {
           <QuestScenarioView scenario={currentScenario} status="lobby" mcq={questMCQ} onStart={startQuestion} playerCount={nonHostPlayers.length} />
         )}
 
-        {/* Attack: live question */}
+        {/* Attack: live question — bars update in real-time, no correct answer revealed yet */}
         {room.mode === 'attack' && room.status === 'question' && shuffledQ && (
           <div style={card}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
               <span style={{ color: '#94a3b8', fontWeight: 600 }}>⚡ Q{room.current_question_index + 1} · {shuffledQ.category}</span>
               <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                <span style={{ color: '#22c55e', fontWeight: 600 }}>{answerCount}/{nonHostPlayers.length} answered</span>
+                <span style={{ color: '#22c55e', fontWeight: 700 }}>{answerCount}/{nonHostPlayers.length} answered</span>
                 <button onClick={revealAnswer} style={orangeBtn}>⏩ Reveal Answer</button>
               </div>
             </div>
-            <p style={{ fontSize: '1.4rem', fontWeight: 600, color: '#e2e8f0', marginBottom: '1.5rem', lineHeight: 1.4 }}>{shuffledQ.question}</p>
-            <VerticalBarChart distribution={answerDistribution} totalPlayers={nonHostPlayers.length} />
+            <p style={{ fontSize: '1.4rem', fontWeight: 600, color: '#e2e8f0', marginBottom: '1.25rem', lineHeight: 1.4 }}>{shuffledQ.question}</p>
+            <div style={{ color: '#64748b', fontSize: '0.8rem', marginBottom: '0.5rem' }}>📊 Live responses (correct answer hidden)</div>
+            <VerticalBarChart distribution={answerDistribution} totalPlayers={nonHostPlayers.length} showCorrect={false} />
           </div>
         )}
 
@@ -479,30 +487,31 @@ export default function HostPage() {
           <QuestScenarioView scenario={currentScenario} status="question" mcq={questMCQ} onReveal={revealAnswer} playerCount={nonHostPlayers.length} answerCount={answerCount} />
         )}
 
-        {/* Reveal */}
-        {room.status === 'reveal' && (
+        {/* Reveal — stage 1: results + bar chart, no example yet */}
+        {(room.status === 'reveal' || room.status === 'reveal_example') && (
           <>
             {room.mode === 'attack' && shuffledQ && (
               <div style={card}>
                 <h3 style={{ color: '#22c55e', fontSize: '1.2rem', marginBottom: '1rem' }}>✅ Answer Revealed — Q{room.current_question_index + 1}</h3>
+
+                {/* Correct answer */}
                 <div style={{ background: 'rgba(34,197,94,0.15)', border: '2px solid #22c55e', borderRadius: '0.75rem', padding: '1rem 1.25rem', marginBottom: '1rem' }}>
-                  <div style={{ color: '#4ade80', fontWeight: 700, fontSize: '0.8rem', marginBottom: '0.25rem' }}>CORRECT</div>
+                  <div style={{ color: '#4ade80', fontWeight: 700, fontSize: '0.8rem', marginBottom: '0.25rem' }}>CORRECT ANSWER</div>
                   <div style={{ fontSize: '1.2rem', fontWeight: 600 }}>{OPTION_LABELS[shuffledQ.correctIndex]}. {shuffledQ.options[shuffledQ.correctIndex]}</div>
                 </div>
-                <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '0.75rem', padding: '1rem', marginBottom: '1rem', color: '#94a3b8', lineHeight: 1.6 }}>💡 {shuffledQ.explanation}</div>
-                {shuffledQ.funFact && <div style={{ background: 'rgba(99,102,241,0.1)', borderRadius: '0.75rem', padding: '0.75rem 1rem', marginBottom: '1rem', color: '#a5b4fc', fontSize: '0.9rem' }}>🤓 {shuffledQ.funFact}</div>}
-                <QuestionExample questionId={CYBER_ATTACK_QUESTIONS[room.current_question_index]?.id} />
-                {/* Vertical bar chart */}
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '0.75rem' }}>Response distribution:</p>
-                  <VerticalBarChart distribution={answerDistribution} totalPlayers={nonHostPlayers.length} />
+
+                {/* Bar chart — shown first, with correct highlighted */}
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '0.75rem' }}>📊 Response distribution:</p>
+                  <VerticalBarChart distribution={answerDistribution} totalPlayers={nonHostPlayers.length} showCorrect={true} />
                 </div>
+
                 {/* Speed breakdown */}
                 {answers.length > 0 && (
-                  <div style={{ marginBottom: '1.5rem' }}>
-                    <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '0.5rem' }}>Speed breakdown:</p>
+                  <div style={{ marginBottom: '1.25rem' }}>
+                    <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '0.5rem' }}>⚡ Speed breakdown:</p>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-                      {answers.sort((a, b) => (a.response_time_ms || 60000) - (b.response_time_ms || 60000)).map(ans => {
+                      {[...answers].sort((a, b) => (a.response_time_ms || 60000) - (b.response_time_ms || 60000)).map(ans => {
                         const p = players.find(pl => pl.id === ans.player_id);
                         const tier = getSpeedTier(ans.response_time_ms || 60000);
                         return (
@@ -517,7 +526,20 @@ export default function HostPage() {
                     </div>
                   </div>
                 )}
-                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+
+                {/* Explanation */}
+                <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '0.75rem', padding: '1rem', marginBottom: '0.75rem', color: '#94a3b8', lineHeight: 1.6 }}>💡 {shuffledQ.explanation}</div>
+                {shuffledQ.funFact && <div style={{ background: 'rgba(99,102,241,0.1)', borderRadius: '0.75rem', padding: '0.75rem 1rem', marginBottom: '1rem', color: '#a5b4fc', fontSize: '0.9rem' }}>🤓 {shuffledQ.funFact}</div>}
+
+                {/* Real-world example — shown only after facilitator clicks "Show Example" */}
+                {room.status === 'reveal_example' && (
+                  <QuestionExample questionId={CYBER_ATTACK_QUESTIONS[room.current_question_index]?.id} />
+                )}
+
+                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginTop: '1.25rem' }}>
+                  {room.status === 'reveal' && (
+                    <button onClick={showExample} style={{ ...orangeBtn, flex: '1 1 auto' }}>📸 Show Real-World Example</button>
+                  )}
                   <button onClick={showLeaderboard} style={greenBtn}>📊 Leaderboard</button>
                   <button onClick={nextQuestion} style={grayBtn}>⏭ Next Question</button>
                 </div>
@@ -527,12 +549,15 @@ export default function HostPage() {
             {room.mode === 'quest' && currentScenario && questMCQ && (
               <div style={card}>
                 <h3 style={{ color: '#22c55e', fontSize: '1.2rem', marginBottom: '1rem' }}>🎭 Debrief: {currentScenario.label}</h3>
+
+                {/* Correct answers */}
                 <div style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: '0.75rem', padding: '1rem 1.25rem', marginBottom: '1.25rem' }}>
                   <div style={{ color: '#4ade80', fontWeight: 700, marginBottom: '0.5rem' }}>✅ Correct Answers</div>
                   {questMCQ.correctIndices.map(ci => <div key={ci} style={{ color: '#d1fae5', marginBottom: '0.3rem', fontSize: '0.9rem' }}>• {questMCQ.options[ci]}</div>)}
                 </div>
+
                 {/* Quest response grid */}
-                <div style={{ marginBottom: '1.5rem' }}>
+                <div style={{ marginBottom: '1.25rem' }}>
                   <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '0.75rem' }}>Player responses:</p>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.5rem' }}>
                     {nonHostPlayers.map(p => {
@@ -555,11 +580,24 @@ export default function HostPage() {
                     })}
                   </div>
                 </div>
-                <div style={{ background: 'rgba(34,197,94,0.08)', borderRadius: '0.75rem', padding: '1rem 1.25rem', marginBottom: '1.5rem' }}>
+
+                {/* All protection tips */}
+                <div style={{ background: 'rgba(34,197,94,0.08)', borderRadius: '0.75rem', padding: '1rem 1.25rem', marginBottom: '1rem' }}>
                   <div style={{ color: '#4ade80', fontWeight: 700, marginBottom: '0.5rem' }}>🛡️ All Protection Measures</div>
                   {currentScenario.protectionTips.map((tip, i) => <div key={i} style={{ color: '#d1fae5', fontSize: '0.88rem', marginBottom: '0.3rem' }}>• {tip}</div>)}
                 </div>
-                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+
+                {/* Real-world example (scenario animation) — shown only after facilitator clicks */}
+                {room.status === 'reveal_example' && currentScenario && (
+                  <div style={{ marginBottom: '1rem' }}>
+                    <ScenarioAnimation scenarioId={currentScenario.id} label={currentScenario.label} />
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginTop: '0.75rem' }}>
+                  {room.status === 'reveal' && (
+                    <button onClick={showExample} style={{ ...orangeBtn, flex: '1 1 auto' }}>📸 Show Real-World Example</button>
+                  )}
                   <button onClick={showLeaderboard} style={greenBtn}>📊 Leaderboard</button>
                   <button onClick={nextQuestion} style={grayBtn}>🎭 Next Scenario</button>
                 </div>
@@ -644,6 +682,10 @@ function QuestScenarioView({ scenario, status, mcq, onStart, onReveal, playerCou
           <h2 style={{ margin: 0, fontSize: '1.6rem', color: '#e2e8f0' }}>{scenario.label}</h2>
           <p style={{ color: '#fb923c', fontWeight: 600, margin: '0.2rem 0 0' }}>{scenario.subtitle}</p>
         </div>
+      </div>
+      {/* Animated scenario simulation — autoplays as soon as scenario loads */}
+      <div style={{ marginBottom: '1.25rem' }}>
+        <ScenarioAnimation scenarioId={scenario.id} label={scenario.label} />
       </div>
       <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '0.75rem', padding: '1rem 1.25rem', marginBottom: '1rem' }}>
         <p style={{ color: '#e2e8f0', margin: 0, fontSize: '0.9rem', lineHeight: 1.7 }}>{scenario.description}</p>
