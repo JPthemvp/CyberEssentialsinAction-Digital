@@ -144,8 +144,7 @@ export default function GameHomePage() {
             <p style={{ color: '#94a3b8', fontSize: '1.1rem', marginTop: '0.75rem' }}>
               A cybersecurity awareness game
             </p>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(200,16,46,0.12)', border: '1px solid rgba(200,16,46,0.3)', borderRadius: '0.625rem', padding: '0.45rem 1rem', marginTop: '0.75rem' }}>
-              <span style={{ fontSize: '1rem' }}>🏅</span>
+            <div style={{ display: 'inline-flex', alignItems: 'center', background: 'rgba(200,16,46,0.12)', border: '1px solid rgba(200,16,46,0.3)', borderRadius: '0.625rem', padding: '0.45rem 1rem', marginTop: '0.75rem' }}>
               <span style={{ color: '#fca5a5', fontSize: '0.85rem', fontWeight: 600 }}>
                 Based on CSA Singapore&apos;s <span style={{ color: '#fff' }}>Cyber Essentials Mark</span> framework
               </span>
