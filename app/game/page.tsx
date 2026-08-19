@@ -74,9 +74,23 @@ export default function GameHomePage() {
       if (roomErr || !room) throw new Error('Room not found. Check the code and try again.');
       if (room.status === 'ended') throw new Error('This game has already ended.');
 
+      // Resolve duplicate names: if "Alex" exists, use "Alex (1)", "Alex (2)", etc.
+      const baseName = playerName.trim();
+      const { data: existingPlayers } = await getSupabase()
+        .from('game_players')
+        .select('player_name')
+        .eq('room_code', code);
+      const takenNames = new Set((existingPlayers || []).map((p: { player_name: string }) => p.player_name));
+      let resolvedName = baseName;
+      if (takenNames.has(resolvedName)) {
+        let n = 1;
+        while (takenNames.has(`${baseName} (${n})`)) n++;
+        resolvedName = `${baseName} (${n})`;
+      }
+
       const { data: newPlayer, error: playerErr } = await getSupabase().from('game_players').insert({
         room_code: code,
-        player_name: playerName.trim(),
+        player_name: resolvedName,
         is_host: false,
         avatar_color: ['#ef4444','#f97316','#22c55e','#06b6d4','#a855f7','#ec4899'][Math.floor(Math.random()*6)],
       }).select('id').single();

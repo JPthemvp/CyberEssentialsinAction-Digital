@@ -101,6 +101,15 @@ export default function PlayPage() {
     return () => clearTimeout(t);
   }, [timerRunning, timeLeft]);
 
+  // Heartbeat: update last_seen_at every 30s so host can track active players
+  useEffect(() => {
+    if (!playerId) return;
+    const ping = () => supabase.from('game_players').update({ last_seen_at: new Date().toISOString() }).eq('id', playerId);
+    ping();
+    const interval = setInterval(ping, 30000);
+    return () => clearInterval(interval);
+  }, [playerId]);
+
   useEffect(() => {
     if (room?.status === 'reveal' && room.mode === 'attack') {
       const key = `attack_${room.current_question_index}`;

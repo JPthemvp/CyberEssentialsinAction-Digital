@@ -15,7 +15,7 @@ const supabase = createClient(
 type GameMode = 'attack' | 'quest';
 type GameStatus = 'lobby' | 'question' | 'reveal' | 'leaderboard' | 'ended';
 
-interface Player { id: string; player_name: string; score: number; avatar_color: string; is_host: boolean; }
+interface Player { id: string; player_name: string; score: number; avatar_color: string; is_host: boolean; last_seen_at: string | null; }
 interface Room { room_code: string; sector: string; mode: GameMode; status: GameStatus; current_question_index: number; current_scenario_id: string | null; question_started_at: string | null; }
 interface Answer { player_id: string; answer_index: number | null; is_correct: boolean | null; points_earned: number; }
 
@@ -164,6 +164,15 @@ export default function HostPage() {
   const currentScenario = room.mode === 'quest' && room.current_scenario_id ? CYBER_QUEST_SCENARIOS.find(s => s.id === room.current_scenario_id) : null;
   const sector = SECTORS.find(s => s.id === room.sector);
   const nonHostPlayers = players.filter(p => !p.is_host);
+  const now = Date.now();
+  const activePlayers = nonHostPlayers.filter(p => {
+    if (!p.last_seen_at) return false;
+    return now - new Date(p.last_seen_at).getTime() < 60000;
+  });
+  const inactivePlayers = nonHostPlayers.filter(p => {
+    if (!p.last_seen_at) return true;
+    return now - new Date(p.last_seen_at).getTime() >= 60000;
+  });
   const answerCount = answers.length;
   const answerDistribution = room.mode === 'attack' && currentQ
     ? [0, 1, 2, 3].map(i => ({ index: i, count: answers.filter(a => a.answer_index === i).length, isCorrect: i === currentQ.correctIndex }))
@@ -190,8 +199,11 @@ export default function HostPage() {
             </button>
           </div>
           <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '0.75rem', padding: '0.5rem 1rem', textAlign: 'center' }}>
-            <div style={{ color: '#94a3b8', fontSize: '0.75rem', textTransform: 'uppercase' }}>Players</div>
-            <div style={{ fontWeight: 800, fontSize: '1.3rem' }}>{nonHostPlayers.length}</div>
+            <div style={{ color: '#94a3b8', fontSize: '0.75rem', textTransform: 'uppercase' }}>Active / Total</div>
+            <div style={{ fontWeight: 800, fontSize: '1.3rem' }}>
+              <span style={{ color: '#22c55e' }}>{activePlayers.length}</span>
+              <span style={{ color: '#475569' }}>/{nonHostPlayers.length}</span>
+            </div>
           </div>
           {timerActive && timeLeft > 0 && (
             <div style={{ background: timeLeft <= 10 ? 'rgba(239,68,68,0.3)' : 'rgba(99,102,241,0.2)', borderRadius: '0.75rem', padding: '0.5rem 1rem', textAlign: 'center', minWidth: 70 }}>
@@ -258,7 +270,13 @@ export default function HostPage() {
             )}
 
             <div style={{ ...card, marginTop: '2rem' }}>
-              <h3 style={{ margin: '0 0 1rem', fontSize: '1.1rem' }}>👥 Players in Lobby ({nonHostPlayers.length})</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <h3 style={{ margin: 0, fontSize: '1.1rem' }}>👥 Players ({nonHostPlayers.length})</h3>
+                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.85rem' }}>
+                  <span><span style={{ color: '#22c55e' }}>●</span> Active: {activePlayers.length}</span>
+                  <span><span style={{ color: '#475569' }}>●</span> Away: {inactivePlayers.length}</span>
+                </div>
+              </div>
               {nonHostPlayers.length === 0 ? (
                 <div style={{ color: '#64748b', textAlign: 'center', padding: '2rem' }}>
                   Waiting for players to join...<br />
@@ -266,12 +284,15 @@ export default function HostPage() {
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                  {nonHostPlayers.map(p => (
-                    <div key={p.id} style={{ background: `${p.avatar_color}20`, border: `1px solid ${p.avatar_color}50`, borderRadius: '2rem', padding: '0.4rem 1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <span style={{ width: 10, height: 10, borderRadius: '50%', background: p.avatar_color, display: 'inline-block' }} />
-                      <span style={{ fontWeight: 600 }}>{p.player_name}</span>
-                    </div>
-                  ))}
+                  {nonHostPlayers.map(p => {
+                    const isActive = p.last_seen_at && (now - new Date(p.last_seen_at).getTime() < 60000);
+                    return (
+                      <div key={p.id} style={{ background: `${p.avatar_color}20`, border: `1px solid ${isActive ? p.avatar_color + '80' : 'rgba(255,255,255,0.08)'}`, borderRadius: '2rem', padding: '0.4rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', opacity: isActive ? 1 : 0.45 }}>
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: isActive ? '#22c55e' : '#475569', display: 'inline-block', flexShrink: 0 }} />
+                        <span style={{ fontWeight: 600 }}>{p.player_name}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
