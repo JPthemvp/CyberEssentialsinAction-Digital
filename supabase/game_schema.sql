@@ -11,6 +11,7 @@ create table if not exists game_rooms (
   current_question_index integer default 0,
   current_scenario_id text default null, -- For quest mode: 'A'...'I'
   question_started_at timestamptz default null,
+  difficulty text not null default 'medium', -- 'easy' | 'medium' | 'hard'
   created_at timestamptz default now()
 );
 
@@ -37,7 +38,8 @@ create table if not exists game_answers (
   is_correct boolean default null,
   response_time_ms integer default null,
   points_earned integer default 0,
-  submitted_at timestamptz default now()
+  submitted_at timestamptz default now(),
+  unique (room_code, player_id, question_key)
 );
 
 -- Enable Row Level Security (permissive for game - all public)

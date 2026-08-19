@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Cyber Essentials in Action — Digital',
+  title: 'Cyber Essentials in Action',
   description: 'A cybersecurity awareness game by CSA Singapore',
 };
 

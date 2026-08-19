@@ -873,6 +873,116 @@ export const CYBER_QUEST_SCENARIOS: QuestScenario[] = [
   },
 ];
 
+// ─── Difficulty ───────────────────────────────────────────────────────────────
+export type Difficulty = 'easy' | 'medium' | 'hard';
+
+// Deterministic seeded shuffle — same seed → same order on every client
+function seededRand(seedStr: string): () => number {
+  let h = 5381;
+  for (const c of seedStr) h = ((h << 5) + h + c.charCodeAt(0)) & 0x7fffffff;
+  return () => {
+    h = (h * 1664525 + 1013904223) & 0x7fffffff;
+    return h / 0x7fffffff;
+  };
+}
+function seededShuffle<T>(arr: T[], seed: string): T[] {
+  const rand = seededRand(seed);
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ─── Cyber Attack: shuffled question with difficulty-adjusted distractors ─────
+export interface ShuffledAttackQ {
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+  funFact?: string;
+  pillar: string;
+  category: string;
+  categoryIcon: string;
+}
+
+export function getShuffledAttackQuestion(questionIdx: number, difficulty: Difficulty, seed: string): ShuffledAttackQ {
+  const q = CYBER_ATTACK_QUESTIONS[questionIdx];
+  const correctAnswer = q.options[q.correctIndex];
+  const origWrong = q.options.filter((_, i) => i !== q.correctIndex);
+
+  let wrongOptions: string[];
+  if (difficulty === 'easy') {
+    // Original distractors — clearly distinguishable from the correct answer
+    wrongOptions = origWrong;
+  } else if (difficulty === 'medium') {
+    // Mix 1 original distractor + 2 correct answers from other questions
+    const otherCorrects = seededShuffle(
+      CYBER_ATTACK_QUESTIONS.filter((_, i) => i !== questionIdx).map(qq => qq.options[qq.correctIndex]),
+      seed + 'm'
+    );
+    wrongOptions = [origWrong[0], otherCorrects[0], otherCorrects[1]];
+  } else {
+    // Hard — all 3 distractors are correct answers from OTHER questions (hard to distinguish)
+    const otherCorrects = seededShuffle(
+      CYBER_ATTACK_QUESTIONS.filter((_, i) => i !== questionIdx).map(qq => qq.options[qq.correctIndex]),
+      seed + 'h'
+    );
+    wrongOptions = otherCorrects.slice(0, 3);
+  }
+
+  const shuffled = seededShuffle([correctAnswer, ...wrongOptions.slice(0, 3)], seed);
+  return {
+    question: q.question,
+    options: shuffled,
+    correctIndex: shuffled.indexOf(correctAnswer),
+    explanation: q.explanation,
+    funFact: q.funFact,
+    pillar: q.pillar,
+    category: q.category,
+    categoryIcon: q.categoryIcon,
+  };
+}
+
+// ─── Cyber Quest: MCQ built from protection tips pool ─────────────────────────
+export interface ShuffledQuestMCQ {
+  question: string;
+  options: string[];
+  correctIndices: number[]; // 2 correct out of 4
+}
+
+export function getQuestMCQ(scenarioId: string, difficulty: Difficulty, seed: string): ShuffledQuestMCQ {
+  const scenario = CYBER_QUEST_SCENARIOS.find(s => s.id === scenarioId)!;
+
+  // Correct pool = this scenario's protection tips (pick 2)
+  const correctPool = seededShuffle(scenario.protectionTips, seed + 'c');
+  const correct = correctPool.slice(0, 2);
+
+  // Wrong pool depends on difficulty
+  const others = CYBER_QUEST_SCENARIOS.filter(s => s.id !== scenarioId);
+  let distractorPool: string[];
+  if (difficulty === 'easy') {
+    // Tips from the most distant scenarios (skip every other)
+    distractorPool = others.filter((_, i) => i % 2 === 0).flatMap(s => s.protectionTips);
+  } else if (difficulty === 'medium') {
+    // Tips from any other scenario
+    distractorPool = others.flatMap(s => s.protectionTips);
+  } else {
+    // Hard — mix protection tips AND role tasks from other scenarios (similar language)
+    distractorPool = others.flatMap(s => [...s.protectionTips, ...s.roles.flatMap(r => r.tasks)]);
+  }
+
+  const wrong = seededShuffle(distractorPool.filter(t => !correct.includes(t)), seed + 'w').slice(0, 2);
+  const allOptions = seededShuffle([...correct, ...wrong], seed + 'a');
+
+  return {
+    question: 'Which TWO actions best protect against this type of attack?',
+    options: allOptions,
+    correctIndices: correct.map(c => allOptions.indexOf(c)),
+  };
+}
+
 export const POINTS = {
   CYBER_ATTACK: {
     CORRECT_BASE: 1000,

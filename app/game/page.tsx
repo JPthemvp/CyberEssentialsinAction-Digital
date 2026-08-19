@@ -121,7 +121,8 @@ export default function GameHomePage() {
         <div style={{ textAlign: 'center', maxWidth: 700, width: '100%' }}>
           {/* Logo & Title */}
           <div style={{ marginBottom: '1rem' }}>
-            <div style={{ fontSize: '5rem', marginBottom: '0.5rem' }}>🛡️</div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/csa-logo.svg" alt="CSA Singapore" style={{ height: 52, marginBottom: '1.5rem', opacity: 0.95 }} />
             <h1 style={{
               fontSize: 'clamp(2rem, 5vw, 3.5rem)',
               fontWeight: 900,
@@ -138,10 +139,10 @@ export default function GameHomePage() {
               color: '#818cf8',
               margin: '0.25rem 0 0',
             }}>
-              IN ACTION ⚡ DIGITAL
+              IN ACTION
             </h2>
             <p style={{ color: '#94a3b8', fontSize: '1.1rem', marginTop: '0.75rem' }}>
-              A cybersecurity awareness game by CSA
+              A cybersecurity awareness game
             </p>
           </div>
 
