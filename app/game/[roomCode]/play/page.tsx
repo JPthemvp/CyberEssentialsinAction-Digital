@@ -37,10 +37,11 @@ export default function PlayPage() {
   const [timerRunning, setTimerRunning] = useState(false);
   const [myResult, setMyResult] = useState<{ correct: boolean; points: number } | null>(null);
   const questionStartRef = useRef<number | null>(null);
+  const roomRef = useRef<Room | null>(null);
 
   const loadRoom = useCallback(async () => {
     const { data } = await supabase.from('game_rooms').select('*').eq('room_code', roomCode).single();
-    if (data) setRoom(data);
+    if (data) { setRoom(data); roomRef.current = data; }
   }, [roomCode]);
 
   const loadPlayer = useCallback(async () => {
@@ -63,6 +64,7 @@ export default function PlayPage() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'game_rooms', filter: `room_code=eq.${roomCode}` }, (payload) => {
         const newRoom = payload.new as Room;
         setRoom(newRoom);
+        roomRef.current = newRoom;
         if (newRoom.status === 'question') {
           setSelectedAnswer(null);
           setQuestResponse('');
@@ -84,10 +86,16 @@ export default function PlayPage() {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'game_players', filter: `id=eq.${playerId}` }, () => loadPlayer())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'game_answers', filter: `room_code=eq.${roomCode}` }, async () => {
-        if (room?.status === 'reveal' && room.mode === 'attack') {
-          const key = `attack_${room.current_question_index}`;
-          const { data } = await supabase.from('game_answers').select('*').eq('room_code', roomCode).eq('player_id', playerId).eq('question_key', key).single();
-          if (data) setMyResult({ correct: data.is_correct ?? false, points: data.points_earned });
+        // Use roomRef to avoid stale closure — roomRef always holds the latest room state
+        const currentRoom = roomRef.current;
+        if (currentRoom?.status === 'reveal' && currentRoom.mode === 'attack') {
+          const key = `attack_${currentRoom.current_question_index}`;
+          const { data } = await supabase.from('game_answers').select('*')
+            .eq('room_code', roomCode).eq('player_id', playerId).eq('question_key', key)
+            .order('submitted_at', { ascending: false }).limit(1).maybeSingle();
+          if (data && data.is_correct !== null) {
+            setMyResult({ correct: data.is_correct, points: data.points_earned });
+          }
         }
       })
       .subscribe();
@@ -113,8 +121,19 @@ export default function PlayPage() {
   useEffect(() => {
     if (room?.status === 'reveal' && room.mode === 'attack') {
       const key = `attack_${room.current_question_index}`;
-      supabase.from('game_answers').select('*').eq('room_code', roomCode).eq('player_id', playerId).eq('question_key', key).single()
-        .then(({ data }) => { if (data) setMyResult({ correct: data.is_correct ?? false, points: data.points_earned }); });
+      // Poll up to 5 times (5s total) waiting for host to finish scoring
+      let attempts = 0;
+      const check = async () => {
+        const { data } = await supabase.from('game_answers').select('*')
+          .eq('room_code', roomCode).eq('player_id', playerId).eq('question_key', key)
+          .order('submitted_at', { ascending: false }).limit(1).maybeSingle();
+        if (data && data.is_correct !== null) {
+          setMyResult({ correct: data.is_correct, points: data.points_earned });
+        } else if (attempts++ < 5) {
+          setTimeout(check, 1000);
+        }
+      };
+      check();
     }
   }, [room?.status, room?.current_question_index, room?.mode, roomCode, playerId]);
 

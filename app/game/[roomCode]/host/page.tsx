@@ -214,6 +214,18 @@ export default function HostPage() {
         </div>
       </div>
 
+      {/* Persistent End Game button — always visible bottom-right */}
+      {room.status !== 'ended' && (
+        <button
+          onClick={() => { if (confirm('End the game for all players?')) updateRoom({ status: 'ended' }); }}
+          style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', zIndex: 100, background: 'rgba(239,68,68,0.15)', border: '2px solid rgba(239,68,68,0.4)', color: '#f87171', borderRadius: '0.75rem', padding: '0.6rem 1.1rem', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer', backdropFilter: 'blur(8px)', boxShadow: '0 4px 16px rgba(0,0,0,0.4)', transition: 'all 0.15s' }}
+          onMouseOver={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,0.35)'; (e.currentTarget as HTMLElement).style.borderColor = '#ef4444'; }}
+          onMouseOut={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,0.15)'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(239,68,68,0.4)'; }}
+        >
+          🏁 End Game
+        </button>
+      )}
+
       <div style={{ padding: '1.5rem 2rem', maxWidth: 1100, margin: '0 auto' }}>
         {room.status === 'lobby' && !room.current_scenario_id && (
           <>
