@@ -333,13 +333,13 @@ export default function HostPage() {
             );
           })()}
           <div>
-            <div style={{ color: '#a5b4fc', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.2rem' }}>📱 Players — scan or visit:</div>
+            <div style={{ color: '#a5b4fc', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.2rem' }}>📱 Players — Scan QR Code to visit:</div>
             <div style={{ color: '#fff', fontWeight: 800, fontSize: '0.95rem', marginBottom: '0.2rem' }}>
               {typeof window !== 'undefined' ? `${window.location.host}/game` : '/game'}
               <span style={{ color: '#6366f1', marginLeft: '0.4rem' }}>→ enter code</span>
               <span style={{ background: '#6366f1', color: '#fff', borderRadius: '0.4rem', padding: '0.1rem 0.55rem', marginLeft: '0.5rem', letterSpacing: '0.2em', fontSize: '1.05rem', fontFamily: 'monospace' }}>{roomCode}</span>
             </div>
-            <div style={{ color: '#64748b', fontSize: '0.78rem' }}>QR code auto-fills the room code — players just tap Join</div>
+            <div style={{ color: '#64748b', fontSize: '0.78rem' }}>Simply type in your name and click Join Game (room code auto-filled)</div>
           </div>
         </div>
       )}
