@@ -15,11 +15,20 @@ export function generateRoomCode(): string {
   return code;
 }
 
-export function calcAttackPoints(isCorrect: boolean, responseTimeMs: number, timeLimitMs: number): number {
+// Max 100 pts per attack question — speed tiers
+export interface SpeedTier { points: number; label: string; emoji: string; color: string; }
+export function getSpeedTier(responseTimeMs: number): SpeedTier {
+  const s = responseTimeMs / 1000;
+  if (s < 5)  return { points: 100, label: 'Lightning Fast!', emoji: '⚡', color: '#fbbf24' };
+  if (s < 10) return { points: 90,  label: 'Super Fast!',    emoji: '🚀', color: '#22c55e' };
+  if (s < 20) return { points: 75,  label: 'Fast!',          emoji: '💨', color: '#4ade80' };
+  if (s < 30) return { points: 60,  label: 'Good Speed',     emoji: '👍', color: '#94a3b8' };
+  if (s < 45) return { points: 40,  label: 'Average',        emoji: '😐', color: '#64748b' };
+  return          { points: 20,  label: 'Slow…',         emoji: '🐢', color: '#475569' };
+}
+export function calcAttackPoints(isCorrect: boolean, responseTimeMs: number): number {
   if (!isCorrect) return 0;
-  const base = 1000;
-  const timeBonus = Math.floor(500 * Math.max(0, 1 - responseTimeMs / timeLimitMs));
-  return base + timeBonus;
+  return getSpeedTier(responseTimeMs).points;
 }
 
 export function formatTime(ms: number): string {
