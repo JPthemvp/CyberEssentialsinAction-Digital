@@ -4,6 +4,31 @@
 'use client';
 import React from 'react';
 
+// Shared phone frame styles — declared BEFORE scenes to avoid TS2448
+const phoneFrame: React.CSSProperties = {
+  background: '#1e293b',
+  border: '2px solid #334155',
+  borderRadius: '0.875rem',
+  padding: '0.875rem',
+  maxWidth: 320,
+  margin: '0 auto',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.4rem',
+};
+const smsHeader: React.CSSProperties = {
+  color: '#94a3b8',
+  fontSize: '0.75rem',
+  fontWeight: 600,
+  marginBottom: '0.25rem',
+};
+const smsBubble: React.CSSProperties = {
+  borderRadius: '0.875rem',
+  padding: '0.6rem 0.875rem',
+  fontSize: '0.8rem',
+  lineHeight: 1.5,
+};
+
 // Map question id → visual scene
 const scenes: Record<string, React.ReactNode> = {
 
@@ -311,31 +336,6 @@ const scenes: Record<string, React.ReactNode> = {
       <div style={{ marginTop: '0.5rem', background: '#1a0000', border: '1px solid #ef4444', borderRadius: '0.375rem', padding: '0.3rem 0.6rem', fontSize: '0.7rem', color: '#fca5a5', fontFamily: 'system-ui' }}>RDP left open = most common ransomware entry point</div>
     </div>
   ),
-};
-
-// Shared phone frame style
-const phoneFrame: React.CSSProperties = {
-  background: '#1e293b',
-  border: '2px solid #334155',
-  borderRadius: '0.875rem',
-  padding: '0.875rem',
-  maxWidth: 320,
-  margin: '0 auto',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '0.4rem',
-};
-const smsHeader: React.CSSProperties = {
-  color: '#94a3b8',
-  fontSize: '0.75rem',
-  fontWeight: 600,
-  marginBottom: '0.25rem',
-};
-const smsBubble: React.CSSProperties = {
-  borderRadius: '0.875rem',
-  padding: '0.6rem 0.875rem',
-  fontSize: '0.8rem',
-  lineHeight: 1.5,
 };
 
 export function QuestionExample({ questionId, className }: { questionId: string; className?: string }) {
