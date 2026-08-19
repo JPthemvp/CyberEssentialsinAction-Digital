@@ -74,17 +74,17 @@ export default function GameHomePage() {
       if (roomErr || !room) throw new Error('Room not found. Check the code and try again.');
       if (room.status === 'ended') throw new Error('This game has already ended.');
 
-      const { error: playerErr } = await getSupabase().from('game_players').insert({
+      const { data: newPlayer, error: playerErr } = await getSupabase().from('game_players').insert({
         room_code: code,
         player_name: playerName.trim(),
         is_host: false,
         avatar_color: ['#ef4444','#f97316','#22c55e','#06b6d4','#a855f7','#ec4899'][Math.floor(Math.random()*6)],
-      });
+      }).select('id').single();
       if (playerErr) throw playerErr;
 
       localStorage.setItem('game_player_name', playerName.trim());
       localStorage.setItem('game_is_host', 'false');
-      router.push(`/game/${code}/play`);
+      router.push(`/game/${code}/play?playerId=${newPlayer.id}`);
     } catch (e: unknown) {
       setError((e as Error).message || 'Failed to join room');
     } finally {
