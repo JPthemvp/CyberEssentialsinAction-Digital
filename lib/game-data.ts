@@ -1080,38 +1080,48 @@ export const QUEST_ROLE_LABELS = [
 ];
 
 /**
+ * Derive a player's team index from their avatar_color.
+ * Team 0 → TEAM_COLORS[0], Team 1 → TEAM_COLORS[1], Team 2 → TEAM_COLORS[2].
+ * Returns -1 when the player hasn't chosen a team yet.
+ * NO DB schema change required — team is encoded in the existing avatar_color field.
+ */
+export function getTeamFromColor(avatarColor: string): number {
+  return TEAM_COLORS.indexOf(avatarColor);
+}
+
+/**
  * Determine a player's Cyber Quest role based on their position within their
  * team (sorted by player ID for determinism).
- * Uses `team_id` from DB if available; falls back to round-robin by global index.
+ * Derives team from avatar_color (no team_id column needed).
  */
 export function getPlayerRoleInTeam(
-  players: { id: string; is_host: boolean; team_id?: number | null }[],
+  players: { id: string; is_host: boolean; avatar_color: string }[],
   playerId: string
 ): number {
   const me = players.find(p => p.id === playerId);
   if (!me) return 0;
-  const myTeam = me.team_id;
-  if (myTeam !== null && myTeam !== undefined) {
-    // Sort this team's members by ID → assign roles in order
+  const myTeamIdx = getTeamFromColor(me.avatar_color);
+  if (myTeamIdx >= 0) {
+    // Sort same-team members by ID → assign roles in order
     const teamMembers = players
-      .filter(p => !p.is_host && p.team_id === myTeam)
+      .filter(p => !p.is_host && getTeamFromColor(p.avatar_color) === myTeamIdx)
       .sort((a, b) => a.id.localeCompare(b.id));
     const pos = teamMembers.findIndex(p => p.id === playerId);
     return pos >= 0 ? pos % QUEST_ROLE_LABELS.length : 0;
   }
-  // Fallback: global round-robin (for unassigned players)
+  // Fallback for unassigned players: global round-robin
   const sorted = players.filter(p => !p.is_host).sort((a, b) => a.id.localeCompare(b.id));
   const idx = sorted.findIndex(p => p.id === playerId);
   return idx >= 0 ? idx % QUEST_ROLE_LABELS.length : 0;
 }
 
-// Legacy helper kept for any code still calling it
+// Legacy shim kept for any code still calling it
 export function getPlayerTeamAndRole(
-  players: { id: string; is_host: boolean; team_id?: number | null }[],
+  players: { id: string; is_host: boolean; avatar_color: string }[],
   playerId: string
 ): { teamIdx: number; roleIdx: number } {
   const me = players.find(p => p.id === playerId);
-  const teamIdx = me?.team_id ?? 0;
+  const teamIdx = me ? getTeamFromColor(me.avatar_color) : -1;
   return { teamIdx, roleIdx: getPlayerRoleInTeam(players, playerId) };
 }
 

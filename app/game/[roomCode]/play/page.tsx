@@ -9,7 +9,7 @@ import {
   CYBER_ATTACK_QUESTIONS, CYBER_QUEST_SCENARIOS,
   getShuffledAttackQuestion, getQuestMCQ,
   getCECategory, CE_PILLAR_COLORS,
-  getSectorTeams, getPlayerRoleInTeam,
+  getSectorTeams, getPlayerRoleInTeam, getTeamFromColor,
   TEAM_COLORS, NUM_TEAMS,
   QUEST_ROLE_LABELS,
   type Difficulty,
@@ -31,7 +31,7 @@ interface Room {
   current_question_index: number; current_scenario_id: string | null;
   question_started_at: string | null; difficulty: Difficulty;
 }
-interface Player { id: string; player_name: string; score: number; avatar_color: string; is_host: boolean; team_id: number | null; }
+interface Player { id: string; player_name: string; score: number; avatar_color: string; is_host: boolean; }
 
 const OPTION_COLORS = ['#ef4444', '#f97316', '#22c55e', '#3b82f6'];
 const OPTION_LABELS = ['A', 'B', 'C', 'D'];
@@ -227,16 +227,18 @@ export default function PlayPage() {
   const myRank = [...nonHostPlayers].sort((a, b) => b.score - a.score).findIndex(p => p.id === playerId) + 1;
   const speedTier = submitTime !== null ? getSpeedTier(submitTime) : null;
   const sectorTeams = getSectorTeams(room.sector);
-  const myTeamIdx = player.team_id ?? -1;
+  // Team is encoded in avatar_color — no extra DB column required
+  const myTeamIdx = getTeamFromColor(player.avatar_color); // -1 if not yet chosen
   const myTeam = myTeamIdx >= 0 ? sectorTeams[myTeamIdx] : null;
   const myRoleIdx = getPlayerRoleInTeam(allPlayers, playerId);
   const myRole = QUEST_ROLE_LABELS[myRoleIdx];
 
   async function selectTeam(teamIdx: number) {
-    await supabase.from('game_players').update({ team_id: teamIdx }).eq('id', playerId);
-    setPlayer(prev => prev ? { ...prev, team_id: teamIdx } : prev);
-    // Refresh all players so host sees the update
-    await loadAllPlayers();
+    const teamColor = TEAM_COLORS[teamIdx];
+    // Store team choice in avatar_color — works without any DB schema change
+    await supabase.from('game_players').update({ avatar_color: teamColor }).eq('id', playerId);
+    setPlayer(prev => prev ? { ...prev, avatar_color: teamColor } : prev);
+    await loadAllPlayers(); // host sees update immediately
   }
 
   const diffBadge: Record<Difficulty, string> = { easy: '#22c55e', medium: '#f97316', hard: '#ef4444' };
@@ -272,7 +274,7 @@ export default function PlayPage() {
       <div style={{ flex: 1, padding: '1.25rem', maxWidth: 700, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
 
         {/* LOBBY — Team Selection (shown until player picks a team) */}
-        {room.status === 'lobby' && !currentScenario && player.team_id === null && (
+        {room.status === 'lobby' && !currentScenario && myTeamIdx === -1 && (
           <div style={{ paddingTop: '1.5rem' }}>
             <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
               <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🏆</div>
@@ -281,7 +283,7 @@ export default function PlayPage() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
               {sectorTeams.map((team, ti) => {
-                const teamPlayers = nonHostPlayers.filter(p => p.team_id === ti);
+                const teamPlayers = nonHostPlayers.filter(p => getTeamFromColor(p.avatar_color) === ti);
                 return (
                   <button key={ti} onClick={() => selectTeam(ti)}
                     style={{ background: `${team.color}15`, border: `3px solid ${team.color}60`, borderRadius: '1.25rem', padding: '1.1rem 1.5rem', cursor: 'pointer', color: '#fff', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '1rem', transition: 'all 0.15s' }}
@@ -303,7 +305,7 @@ export default function PlayPage() {
         )}
 
         {/* LOBBY — Waiting (after team is chosen) */}
-        {room.status === 'lobby' && !currentScenario && player.team_id !== null && (
+        {room.status === 'lobby' && !currentScenario && myTeamIdx >= 0 && (
           <div style={{ textAlign: 'center', paddingTop: '2rem' }}>
             {myTeam && (
               <div style={{ background: `${myTeam.color}15`, border: `2px solid ${myTeam.color}50`, borderRadius: '1rem', padding: '1rem 1.5rem', marginBottom: '1.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -322,8 +324,8 @@ export default function PlayPage() {
             {/* Teams overview */}
             <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
               {sectorTeams.map((team, ti) => {
-                const count = nonHostPlayers.filter(p => p.team_id === ti).length;
-                const isMe = player.team_id === ti;
+                const count = nonHostPlayers.filter(p => getTeamFromColor(p.avatar_color) === ti).length;
+                const isMe = myTeamIdx === ti;
                 return (
                   <div key={ti} style={{ background: `${team.color}${isMe ? '20' : '0a'}`, border: `2px solid ${team.color}${isMe ? '70' : '30'}`, borderRadius: '0.75rem', padding: '0.5rem 0.875rem', textAlign: 'center', minWidth: 80 }}>
                     <div style={{ fontSize: '1.2rem' }}>{team.emoji}</div>

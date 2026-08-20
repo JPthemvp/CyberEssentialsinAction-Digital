@@ -9,7 +9,7 @@ import {
   CYBER_ATTACK_QUESTIONS, CYBER_QUEST_SCENARIOS, SECTORS,
   getShuffledAttackQuestion, getQuestMCQ,
   getCECategory, CE_PILLAR_COLORS,
-  getSectorTeams, getPlayerRoleInTeam,
+  getSectorTeams, getPlayerRoleInTeam, getTeamFromColor,
   TEAM_COLORS, NUM_TEAMS,
   QUEST_ROLE_LABELS,
   type QuestScenario, type Difficulty,
@@ -26,7 +26,7 @@ const supabase = createClient(
 type GameMode = 'attack' | 'quest';
 type GameStatus = 'lobby' | 'question' | 'reveal' | 'reveal_example' | 'leaderboard' | 'ended';
 
-interface Player { id: string; player_name: string; score: number; avatar_color: string; is_host: boolean; last_seen_at: string | null; team_id: number | null; }
+interface Player { id: string; player_name: string; score: number; avatar_color: string; is_host: boolean; last_seen_at: string | null; }
 interface Room { room_code: string; sector: string; mode: GameMode; status: GameStatus; current_question_index: number; current_scenario_id: string | null; question_started_at: string | null; difficulty: Difficulty; }
 interface Answer { id: string; player_id: string; answer_index: number | null; answer_text: string | null; is_correct: boolean | null; points_earned: number; response_time_ms: number | null; }
 
@@ -415,7 +415,7 @@ ${(qs.answers || []).sort((a, b) => (a.response_time_ms || 99999) - (b.response_
 
   // ── Team helpers ──────────────────────────────────────────────────────────
   const sectorTeams = getSectorTeams(room.sector);
-  function playerTeam(p: Player): number { return p.team_id ?? -1; }
+  function playerTeam(p: Player): number { return getTeamFromColor(p.avatar_color); }
   function playerRole(playerId: string) { return getPlayerRoleInTeam(players, playerId); }
   const teamScores = Array.from({ length: NUM_TEAMS }, (_, ti) => ({
     teamIdx: ti,
