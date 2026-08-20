@@ -8,6 +8,9 @@ import { createClient } from '@supabase/supabase-js';
 import {
   CYBER_ATTACK_QUESTIONS, CYBER_QUEST_SCENARIOS,
   getShuffledAttackQuestion, getQuestMCQ,
+  getPlayerTeamAndRole, getCECategory, CE_PILLAR_COLORS,
+  TEAM_NAMES, TEAM_COLORS, TEAM_EMOJIS,
+  QUEST_ROLE_LABELS,
   type Difficulty,
 } from '@/lib/game-data';
 import { getSpeedTier } from '@/lib/game-utils';
@@ -222,6 +225,8 @@ export default function PlayPage() {
   const nonHostPlayers = allPlayers.filter(p => !p.is_host);
   const myRank = [...nonHostPlayers].sort((a, b) => b.score - a.score).findIndex(p => p.id === playerId) + 1;
   const speedTier = submitTime !== null ? getSpeedTier(submitTime) : null;
+  const { teamIdx: myTeamIdx, roleIdx: myRoleIdx } = getPlayerTeamAndRole(allPlayers, playerId);
+  const myRole = QUEST_ROLE_LABELS[myRoleIdx];
 
   const diffBadge: Record<Difficulty, string> = { easy: '#22c55e', medium: '#f97316', hard: '#ef4444' };
 
@@ -235,6 +240,7 @@ export default function PlayPage() {
           <div style={{ width: 1, height: 18, background: 'rgba(255,255,255,0.15)' }} />
           <span style={{ width: 11, height: 11, borderRadius: '50%', background: player.avatar_color, display: 'inline-block' }} />
           <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{player.player_name}</span>
+          <span style={{ background: `${TEAM_COLORS[myTeamIdx]}20`, color: TEAM_COLORS[myTeamIdx], border: `1px solid ${TEAM_COLORS[myTeamIdx]}50`, borderRadius: '0.375rem', padding: '0.1rem 0.45rem', fontSize: '0.72rem', fontWeight: 700 }}>{TEAM_EMOJIS[myTeamIdx]} {TEAM_NAMES[myTeamIdx]}</span>
           <span style={{ background: `${diffBadge[difficulty]}20`, color: diffBadge[difficulty], borderRadius: '0.375rem', padding: '0.1rem 0.45rem', fontSize: '0.7rem', fontWeight: 700 }}>{difficulty.toUpperCase()}</span>
         </div>
         <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
@@ -278,6 +284,18 @@ export default function PlayPage() {
         {/* LOBBY with quest scenario briefing + animation */}
         {room.status === 'lobby' && currentScenario && (
           <div>
+            {/* My role for this Cyber Quest */}
+            <div style={{ background: `${myRole.color}15`, border: `2px solid ${myRole.color}50`, borderRadius: '1rem', padding: '0.875rem 1.25rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <span style={{ fontSize: '1.8rem' }}>{myRole.icon}</span>
+              <div>
+                <div style={{ color: myRole.color, fontWeight: 800, fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.1rem' }}>Your Role</div>
+                <div style={{ fontWeight: 700, fontSize: '1rem' }}>{myRole.label}</div>
+                <div style={{ color: '#64748b', fontSize: '0.78rem' }}>{myRole.desc}</div>
+              </div>
+              <div style={{ marginLeft: 'auto', background: `${TEAM_COLORS[myTeamIdx]}20`, color: TEAM_COLORS[myTeamIdx], border: `1px solid ${TEAM_COLORS[myTeamIdx]}50`, borderRadius: '0.5rem', padding: '0.25rem 0.75rem', fontWeight: 700, fontSize: '0.82rem' }}>
+                {TEAM_EMOJIS[myTeamIdx]} Team {TEAM_NAMES[myTeamIdx]}
+              </div>
+            </div>
             <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
               <div style={{ fontSize: '3rem', marginBottom: '0.4rem' }}>{currentScenario.icon}</div>
               <h2 style={{ fontSize: '1.5rem', marginBottom: '0.2rem' }}>{currentScenario.label}</h2>
@@ -294,8 +312,15 @@ export default function PlayPage() {
         {/* ATTACK QUESTION */}
         {room.status === 'question' && room.mode === 'attack' && shuffledQ && (
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.875rem' }}>
-              <span style={{ background: 'rgba(249,115,22,0.2)', color: '#fb923c', borderRadius: '0.5rem', padding: '0.2rem 0.7rem', fontSize: '0.78rem', fontWeight: 600 }}>{shuffledQ.pillar}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.875rem', flexWrap: 'wrap', gap: '0.4rem' }}>
+              <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+                <span style={{ background: 'rgba(249,115,22,0.2)', color: '#fb923c', borderRadius: '0.5rem', padding: '0.2rem 0.7rem', fontSize: '0.78rem', fontWeight: 600 }}>{shuffledQ.pillar}</span>
+                {(() => {
+                  const ce = getCECategory(shuffledQ.pillar);
+                  const ceColor = CE_PILLAR_COLORS[ce] || '#6366f1';
+                  return <span style={{ background: `${ceColor}18`, color: ceColor, border: `1px solid ${ceColor}40`, borderRadius: '0.5rem', padding: '0.2rem 0.7rem', fontSize: '0.75rem', fontWeight: 700 }}>📋 CE: {ce}</span>;
+                })()}
+              </div>
               <span style={{ color: '#64748b', fontSize: '0.82rem' }}>Q{room.current_question_index + 1} of {CYBER_ATTACK_QUESTIONS.length}</span>
             </div>
             <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '1.25rem', padding: '1.25rem', marginBottom: '1.25rem' }}>
@@ -453,10 +478,38 @@ export default function PlayPage() {
               <div style={{ color: '#4ade80', fontWeight: 700, marginBottom: '0.5rem', fontSize: '0.9rem' }}>✅ Correct Answers</div>
               {questMCQ.correctIndices.map(ci => <div key={ci} style={{ color: '#d1fae5', marginBottom: '0.3rem', fontSize: '0.9rem' }}>• {questMCQ.options[ci]}</div>)}
             </div>
+            {/* My role tasks for this scenario */}
+            {currentScenario.roles[myRoleIdx] && (
+              <div style={{ background: `${myRole.color}12`, border: `2px solid ${myRole.color}40`, borderRadius: '1rem', padding: '1rem 1.25rem', marginBottom: '0.875rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                  <span style={{ fontSize: '1.2rem' }}>{myRole.icon}</span>
+                  <span style={{ color: myRole.color, fontWeight: 800, fontSize: '0.85rem' }}>Your Role: {currentScenario.roles[myRoleIdx].role}</span>
+                </div>
+                {currentScenario.roles[myRoleIdx].tasks.map((task, i) => (
+                  <div key={i} style={{ color: '#e2e8f0', fontSize: '0.875rem', marginBottom: '0.35rem' }}>✅ {task}</div>
+                ))}
+              </div>
+            )}
+
             <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '1rem', padding: '1rem 1.25rem', marginBottom: '0.875rem' }}>
               <div style={{ color: '#94a3b8', fontWeight: 700, marginBottom: '0.5rem', fontSize: '0.82rem', textTransform: 'uppercase' }}>All Protection Tips</div>
               {currentScenario.protectionTips.map((tip, i) => <div key={i} style={{ color: '#cbd5e1', fontSize: '0.875rem', marginBottom: '0.35rem' }}>• {tip}</div>)}
             </div>
+
+            {/* CE measures covered by this scenario */}
+            <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginBottom: '0.875rem' }}>
+              {currentScenario.ceMeasures.map(ce => {
+                const ceColor = CE_PILLAR_COLORS[ce] || '#6366f1';
+                return <span key={ce} style={{ background: `${ceColor}18`, color: ceColor, border: `1px solid ${ceColor}40`, borderRadius: '0.375rem', padding: '0.15rem 0.55rem', fontSize: '0.72rem', fontWeight: 700 }}>📋 {ce}</span>;
+              })}
+            </div>
+
+            {/* Learning objective */}
+            <div style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: '1rem', padding: '1rem 1.25rem', marginBottom: '0.875rem' }}>
+              <div style={{ color: '#a5b4fc', fontWeight: 700, fontSize: '0.78rem', marginBottom: '0.35rem' }}>🎯 LEARNING OBJECTIVE</div>
+              <p style={{ color: '#c7d2fe', margin: 0, fontSize: '0.85rem', lineHeight: 1.7 }}>{currentScenario.learningObjective}</p>
+            </div>
+
             {/* Scenario simulation — shown when facilitator reveals it */}
             {room.status === 'reveal_example' && (
               <ScenarioAnimation scenarioId={currentScenario.id} label={currentScenario.label} />

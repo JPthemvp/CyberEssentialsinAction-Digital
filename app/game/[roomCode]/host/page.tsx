@@ -8,6 +8,9 @@ import { createClient } from '@supabase/supabase-js';
 import {
   CYBER_ATTACK_QUESTIONS, CYBER_QUEST_SCENARIOS, SECTORS,
   getShuffledAttackQuestion, getQuestMCQ,
+  getPlayerTeamAndRole, getCECategory, CE_PILLAR_COLORS,
+  TEAM_NAMES, TEAM_COLORS, TEAM_EMOJIS, NUM_TEAMS,
+  QUEST_ROLE_LABELS,
   type QuestScenario, type Difficulty,
 } from '@/lib/game-data';
 import { getSpeedTier } from '@/lib/game-utils';
@@ -408,6 +411,15 @@ ${(qs.answers || []).sort((a, b) => (a.response_time_ms || 99999) - (b.response_
   const sector = SECTORS.find(s => s.id === room.sector);
   const hostPlayer = players.find(p => p.is_host);
   const nonHostPlayers = players.filter(p => !p.is_host);
+
+  // ── Team helpers ──────────────────────────────────────────────────────────
+  function playerTeam(playerId: string) { return getPlayerTeamAndRole(players, playerId).teamIdx; }
+  function playerRole(playerId: string) { return getPlayerTeamAndRole(players, playerId).roleIdx; }
+  const teamScores = Array.from({ length: NUM_TEAMS }, (_, ti) => ({
+    teamIdx: ti,
+    score: nonHostPlayers.filter(p => playerTeam(p.id) === ti).reduce((s, p) => s + p.score, 0),
+    count: nonHostPlayers.filter(p => playerTeam(p.id) === ti).length,
+  }));
   const now = Date.now();
   const activePlayers = nonHostPlayers.filter(p => p.last_seen_at && now - new Date(p.last_seen_at).getTime() < 60000);
   const answerCount = answers.length;
@@ -545,7 +557,16 @@ ${(qs.answers || []).sort((a, b) => (a.response_time_ms || 99999) - (b.response_
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                   <div>
                     <h3 style={{ margin: 0, fontSize: '1.1rem' }}>⚡ Question {room.current_question_index + 1} of {CYBER_ATTACK_QUESTIONS.length}</h3>
-                    {shuffledQ && <span style={{ background: 'rgba(249,115,22,0.2)', color: '#fb923c', borderRadius: '0.375rem', padding: '0.15rem 0.6rem', fontSize: '0.8rem', fontWeight: 600, marginTop: '0.25rem', display: 'inline-block' }}>{shuffledQ.pillar}</span>}
+                    {shuffledQ && (() => {
+                      const ce = getCECategory(shuffledQ.pillar);
+                      const ceColor = CE_PILLAR_COLORS[ce] || '#6366f1';
+                      return (
+                        <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.3rem', flexWrap: 'wrap' }}>
+                          <span style={{ background: 'rgba(249,115,22,0.2)', color: '#fb923c', borderRadius: '0.375rem', padding: '0.15rem 0.6rem', fontSize: '0.8rem', fontWeight: 600 }}>{shuffledQ.pillar}</span>
+                          <span style={{ background: `${ceColor}20`, color: ceColor, border: `1px solid ${ceColor}50`, borderRadius: '0.375rem', padding: '0.15rem 0.6rem', fontSize: '0.78rem', fontWeight: 700 }}>📋 CE: {ce}</span>
+                        </div>
+                      );
+                    })()}
                   </div>
                   <button onClick={() => setShowQuestionPicker(p => !p)}
                     style={{ background: 'rgba(99,102,241,0.2)', border: '2px solid rgba(99,102,241,0.4)', color: '#a5b4fc', borderRadius: '0.625rem', padding: '0.5rem 1rem', cursor: 'pointer', fontWeight: 700, fontSize: '0.9rem' }}>
@@ -622,10 +643,10 @@ ${(qs.answers || []).sort((a, b) => (a.response_time_ms || 99999) - (b.response_
               </div>
             )}
 
-            {/* Players */}
+            {/* Players — grouped by team */}
             <div style={{ ...card, marginTop: '1.5rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.875rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                <h3 style={{ margin: 0, fontSize: '1rem' }}>👥 Players ({nonHostPlayers.length})</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <h3 style={{ margin: 0, fontSize: '1rem' }}>👥 Players ({nonHostPlayers.length}) — 3 Teams</h3>
                 <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
                   <span style={{ color: '#22c55e' }}>●</span> Active: {activePlayers.length} &nbsp;
                   <span style={{ color: '#475569' }}>●</span> Away: {nonHostPlayers.length - activePlayers.length}
@@ -633,13 +654,31 @@ ${(qs.answers || []).sort((a, b) => (a.response_time_ms || 99999) - (b.response_
               </div>
               {nonHostPlayers.length === 0
                 ? <div style={{ color: '#64748b', textAlign: 'center', padding: '1.5rem' }}>Waiting for players… share code <strong style={{ color: '#a5b4fc' }}>{roomCode}</strong></div>
-                : <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.45rem' }}>
-                    {nonHostPlayers.map(p => {
-                      const isActive = p.last_seen_at && (now - new Date(p.last_seen_at).getTime() < 60000);
+                : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.875rem' }}>
+                    {Array.from({ length: NUM_TEAMS }, (_, ti) => {
+                      const teamPlayers = nonHostPlayers.filter(p => playerTeam(p.id) === ti);
                       return (
-                        <div key={p.id} style={{ background: `${p.avatar_color}18`, border: `1px solid ${isActive ? p.avatar_color + '70' : 'rgba(255,255,255,0.08)'}`, borderRadius: '2rem', padding: '0.35rem 0.875rem', display: 'flex', alignItems: 'center', gap: '0.4rem', opacity: isActive ? 1 : 0.45 }}>
-                          <span style={{ width: 7, height: 7, borderRadius: '50%', background: isActive ? '#22c55e' : '#475569', display: 'inline-block' }} />
-                          <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{p.player_name}</span>
+                        <div key={ti} style={{ background: `${TEAM_COLORS[ti]}10`, border: `2px solid ${TEAM_COLORS[ti]}40`, borderRadius: '1rem', padding: '0.875rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.6rem' }}>
+                            <span style={{ fontSize: '1.1rem' }}>{TEAM_EMOJIS[ti]}</span>
+                            <span style={{ fontWeight: 800, color: TEAM_COLORS[ti], fontSize: '0.9rem' }}>Team {TEAM_NAMES[ti]}</span>
+                            <span style={{ color: '#64748b', fontSize: '0.75rem', marginLeft: 'auto' }}>{teamPlayers.length} players</span>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                            {teamPlayers.length === 0
+                              ? <span style={{ color: '#475569', fontSize: '0.8rem', fontStyle: 'italic' }}>No players yet</span>
+                              : teamPlayers.map(p => {
+                                  const isActive = p.last_seen_at && (now - new Date(p.last_seen_at).getTime() < 60000);
+                                  const role = QUEST_ROLE_LABELS[playerRole(p.id)];
+                                  return (
+                                    <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', opacity: isActive ? 1 : 0.5 }}>
+                                      <span style={{ width: 7, height: 7, borderRadius: '50%', background: isActive ? '#22c55e' : '#475569', flexShrink: 0 }} />
+                                      <span style={{ fontWeight: 600, fontSize: '0.85rem', flex: 1 }}>{p.player_name}</span>
+                                      <span title={role.label} style={{ fontSize: '0.9rem' }}>{role.icon}</span>
+                                    </div>
+                                  );
+                                })}
+                          </div>
                         </div>
                       );
                     })}
@@ -679,7 +718,14 @@ ${(qs.answers || []).sort((a, b) => (a.response_time_ms || 99999) - (b.response_
           <>
             {room.mode === 'attack' && shuffledQ && (
               <div style={card}>
-                <h3 style={{ color: '#22c55e', fontSize: '1.2rem', marginBottom: '1rem' }}>✅ Answer Revealed — Q{room.current_question_index + 1}</h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                  <h3 style={{ color: '#22c55e', fontSize: '1.2rem', margin: 0 }}>✅ Answer Revealed — Q{room.current_question_index + 1}</h3>
+                  {shuffledQ && (() => {
+                    const ce = getCECategory(shuffledQ.pillar);
+                    const ceColor = CE_PILLAR_COLORS[ce] || '#6366f1';
+                    return <span style={{ background: `${ceColor}20`, color: ceColor, border: `1px solid ${ceColor}50`, borderRadius: '0.375rem', padding: '0.2rem 0.65rem', fontSize: '0.78rem', fontWeight: 700 }}>📋 CE: {ce}</span>;
+                  })()}
+                </div>
 
                 {/* Correct answer */}
                 <div style={{ background: 'rgba(34,197,94,0.15)', border: '2px solid #22c55e', borderRadius: '0.75rem', padding: '1rem 1.25rem', marginBottom: '1rem' }}>
@@ -735,7 +781,16 @@ ${(qs.answers || []).sort((a, b) => (a.response_time_ms || 99999) - (b.response_
 
             {room.mode === 'quest' && currentScenario && questMCQ && (
               <div style={card}>
-                <h3 style={{ color: '#22c55e', fontSize: '1.2rem', marginBottom: '1rem' }}>🎭 Debrief: {currentScenario.label}</h3>
+                {/* Scenario header with CE measure badges */}
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <h3 style={{ color: '#22c55e', fontSize: '1.2rem', margin: '0 0 0.5rem' }}>🎭 Debrief: {currentScenario.label}</h3>
+                  <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                    {currentScenario.ceMeasures.map(ce => {
+                      const ceColor = CE_PILLAR_COLORS[ce] || '#6366f1';
+                      return <span key={ce} style={{ background: `${ceColor}20`, color: ceColor, border: `1px solid ${ceColor}50`, borderRadius: '0.375rem', padding: '0.15rem 0.6rem', fontSize: '0.75rem', fontWeight: 700 }}>📋 CE: {ce}</span>;
+                    })}
+                  </div>
+                </div>
 
                 {/* Correct answers */}
                 <div style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: '0.75rem', padding: '1rem 1.25rem', marginBottom: '1.25rem' }}>
@@ -768,10 +823,46 @@ ${(qs.answers || []).sort((a, b) => (a.response_time_ms || 99999) - (b.response_
                   </div>
                 </div>
 
+                {/* Role breakdown — who does what in this scenario */}
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '0.75rem' }}>🎭 Role responsibilities in this scenario:</p>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.5rem' }}>
+                    {currentScenario.roles.slice(0, 4).map((role, ri) => {
+                      const stdRole = QUEST_ROLE_LABELS[ri % QUEST_ROLE_LABELS.length];
+                      // Players with this role index
+                      const rolePlayers = nonHostPlayers.filter(p => playerRole(p.id) === ri);
+                      return (
+                        <div key={ri} style={{ background: `${stdRole.color}12`, border: `1px solid ${stdRole.color}40`, borderRadius: '0.75rem', padding: '0.75rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.4rem' }}>
+                            <span style={{ fontSize: '1rem' }}>{stdRole.icon}</span>
+                            <span style={{ fontWeight: 700, fontSize: '0.82rem', color: stdRole.color }}>{role.role}</span>
+                          </div>
+                          {rolePlayers.length > 0 && (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', marginBottom: '0.4rem' }}>
+                              {rolePlayers.map(p => (
+                                <span key={p.id} style={{ background: `${TEAM_COLORS[playerTeam(p.id)]}25`, color: TEAM_COLORS[playerTeam(p.id)], borderRadius: '99px', padding: '0.1rem 0.5rem', fontSize: '0.72rem', fontWeight: 700 }}>
+                                  {TEAM_EMOJIS[playerTeam(p.id)]} {p.player_name}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          {role.tasks.slice(0, 2).map((t, ti) => <div key={ti} style={{ color: '#94a3b8', fontSize: '0.75rem', marginBottom: '0.2rem' }}>• {t}</div>)}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 {/* All protection tips */}
                 <div style={{ background: 'rgba(34,197,94,0.08)', borderRadius: '0.75rem', padding: '1rem 1.25rem', marginBottom: '1rem' }}>
                   <div style={{ color: '#4ade80', fontWeight: 700, marginBottom: '0.5rem' }}>🛡️ All Protection Measures</div>
                   {currentScenario.protectionTips.map((tip, i) => <div key={i} style={{ color: '#d1fae5', fontSize: '0.88rem', marginBottom: '0.3rem' }}>• {tip}</div>)}
+                </div>
+
+                {/* Learning objective */}
+                <div style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: '0.75rem', padding: '1rem 1.25rem', marginBottom: '1rem' }}>
+                  <div style={{ color: '#a5b4fc', fontWeight: 700, fontSize: '0.82rem', marginBottom: '0.4rem' }}>🎯 LEARNING OBJECTIVE</div>
+                  <p style={{ color: '#c7d2fe', margin: 0, fontSize: '0.875rem', lineHeight: 1.7 }}>{currentScenario.learningObjective}</p>
                 </div>
 
                 {/* Real-world example (scenario animation) — shown only after facilitator clicks */}
@@ -796,16 +887,34 @@ ${(qs.answers || []).sort((a, b) => (a.response_time_ms || 99999) - (b.response_
         {/* Leaderboard */}
         {room.status === 'leaderboard' && (
           <div style={card}>
-            <h2 style={{ textAlign: 'center', fontSize: '2rem', marginBottom: '2rem' }}>🏆 Leaderboard</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxWidth: 500, margin: '0 auto 2rem' }}>
-              {[...nonHostPlayers].sort((a, b) => b.score - a.score).slice(0, 10).map((p, i) => (
-                <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: i === 0 ? 'rgba(251,191,36,0.15)' : 'rgba(255,255,255,0.04)', borderRadius: '0.75rem', padding: '0.875rem 1.25rem', border: `1px solid ${i === 0 ? 'rgba(251,191,36,0.3)' : 'transparent'}` }}>
-                  <span style={{ fontSize: '1.4rem', width: 34 }}>{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}</span>
-                  <span style={{ width: 12, height: 12, borderRadius: '50%', background: p.avatar_color, display: 'inline-block' }} />
-                  <span style={{ fontWeight: 700, flex: 1 }}>{p.player_name}</span>
-                  <span style={{ fontWeight: 800, fontSize: '1.25rem', color: i === 0 ? '#fbbf24' : '#e2e8f0' }}>{p.score.toLocaleString()}</span>
+            <h2 style={{ textAlign: 'center', fontSize: '2rem', marginBottom: '1.5rem' }}>🏆 Leaderboard</h2>
+
+            {/* Team scores */}
+            <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+              {[...teamScores].sort((a, b) => b.score - a.score).map((ts, rank) => (
+                <div key={ts.teamIdx} style={{ background: `${TEAM_COLORS[ts.teamIdx]}15`, border: `2px solid ${TEAM_COLORS[ts.teamIdx]}50`, borderRadius: '1rem', padding: '0.875rem 1.5rem', textAlign: 'center', minWidth: 130 }}>
+                  <div style={{ fontSize: '1.5rem', marginBottom: '0.15rem' }}>{rank === 0 ? '🥇' : rank === 1 ? '🥈' : '🥉'} {TEAM_EMOJIS[ts.teamIdx]}</div>
+                  <div style={{ fontWeight: 800, color: TEAM_COLORS[ts.teamIdx], fontSize: '1.1rem' }}>Team {TEAM_NAMES[ts.teamIdx]}</div>
+                  <div style={{ fontWeight: 900, fontSize: '1.4rem', color: '#fbbf24' }}>{ts.score.toLocaleString()}</div>
+                  <div style={{ color: '#64748b', fontSize: '0.72rem' }}>{ts.count} players</div>
                 </div>
               ))}
+            </div>
+
+            {/* Individual leaderboard */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxWidth: 500, margin: '0 auto 2rem' }}>
+              {[...nonHostPlayers].sort((a, b) => b.score - a.score).slice(0, 10).map((p, i) => {
+                const ti = playerTeam(p.id);
+                return (
+                  <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: i === 0 ? 'rgba(251,191,36,0.15)' : 'rgba(255,255,255,0.04)', borderRadius: '0.75rem', padding: '0.875rem 1.25rem', border: `1px solid ${i === 0 ? 'rgba(251,191,36,0.3)' : 'transparent'}` }}>
+                    <span style={{ fontSize: '1.4rem', width: 34 }}>{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}</span>
+                    <span style={{ fontSize: '0.9rem' }} title={`Team ${TEAM_NAMES[ti]}`}>{TEAM_EMOJIS[ti]}</span>
+                    <span style={{ width: 12, height: 12, borderRadius: '50%', background: p.avatar_color, display: 'inline-block' }} />
+                    <span style={{ fontWeight: 700, flex: 1 }}>{p.player_name}</span>
+                    <span style={{ fontWeight: 800, fontSize: '1.25rem', color: i === 0 ? '#fbbf24' : '#e2e8f0' }}>{p.score.toLocaleString()}</span>
+                  </div>
+                );
+              })}
             </div>
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
               {room.mode === 'attack' && <button onClick={nextQuestion} style={greenBtn}>⚡ Next Question</button>}

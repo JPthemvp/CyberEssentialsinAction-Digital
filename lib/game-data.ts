@@ -406,6 +406,8 @@ export interface QuestScenario {
   description: string;
   roles: QuestRole[];
   protectionTips: string[];
+  ceMeasures: string[];        // Cyber Essentials pillars this scenario covers
+  learningObjective: string;   // Why this scenario matters + what players should take away
   aiEdition?: boolean;
 }
 
@@ -466,6 +468,8 @@ export const CYBER_QUEST_SCENARIOS: QuestScenario[] = [
       'Secure administrator accounts to prevent lateral movement',
       'Include ransomware scenarios in your incident response plan',
     ],
+    ceMeasures: ['Update: Patch Management', 'Backup: Data Backup', 'Respond: Incident Response'],
+    learningObjective: 'Understand how delayed software patching enables ransomware entry, why backups must be stored separately from your operating environment, and how each role in your organisation responds when ransomware strikes. Reference: CE Pillars — Update, Backup, Respond.',
   },
   {
     id: 'B',
@@ -517,6 +521,8 @@ export const CYBER_QUEST_SCENARIOS: QuestScenario[] = [
       'Train employees on social engineering tactics — it is the #2 cyber incident type in Singapore',
       'Include social engineering in the incident response plan',
     ],
+    ceMeasures: ['Assets: People', 'Secure: Access Control', 'Respond: Incident Response'],
+    learningObjective: 'Recognise how credential-stealing phishing attacks exploit human trust, and learn how strong unique passphrases, MFA, and regular staff awareness training collectively reduce the likelihood and impact of social engineering attacks. Reference: CE Pillars — Assets (People), Secure (Access Control), Respond.',
   },
   {
     id: 'C',
@@ -567,6 +573,8 @@ export const CYBER_QUEST_SCENARIOS: QuestScenario[] = [
       'Limit public audio and video recordings (social media, voicemail)',
       'Implement AI-enabled threat awareness training for all employees',
     ],
+    ceMeasures: ['Assets: People', 'Respond: Incident Response'],
+    learningObjective: 'Identify AI-enabled deepfake impersonation attacks, understand why voice and video alone are no longer trustworthy for high-stakes decisions, and apply out-of-band verification techniques to protect against AI-driven financial fraud. Reference: CE Pillars — Assets (People), Respond.',
   },
   {
     id: 'D',
@@ -616,6 +624,8 @@ export const CYBER_QUEST_SCENARIOS: QuestScenario[] = [
       'Train staff on supply chain attack risks',
       'Include supply chain attacks in the incident response plan',
     ],
+    ceMeasures: ['Assets: Hardware & Software', 'Secure: Secure Configuration', 'Respond: Incident Response'],
+    learningObjective: 'Understand that your cyber risk extends to every vendor you trust with your data or systems. Learn how to vet third-party cybersecurity practices, set minimum security requirements, and respond when a vendor breach exposes your customers\' data. Reference: CE Pillars — Assets (Hardware & Software), Secure (Secure Configuration), Respond.',
   },
   {
     id: 'E',
@@ -666,6 +676,8 @@ export const CYBER_QUEST_SCENARIOS: QuestScenario[] = [
       'Review default configurations — they are often NOT secure',
       'Cloud misconfiguration is a top-5 cyber incident in Singapore (CSA 2024)',
     ],
+    ceMeasures: ['Secure: Access Control', 'Secure: Secure Configuration', 'Assets: Data'],
+    learningObjective: 'Discover how default cloud configurations are optimised for convenience, not security — and how a single weak password without MFA can expose an entire cloud inventory. Understand the Cloud Shared Responsibility Model and your organisation\'s duty to configure cloud services securely. Reference: CE Pillars — Secure (Access Control, Secure Configuration), Assets (Data).',
   },
   {
     id: 'F',
@@ -716,6 +728,8 @@ export const CYBER_QUEST_SCENARIOS: QuestScenario[] = [
       'ChatGPT public queries are now indexed by Google — treat inputs as potentially public',
       'IBM 2025: 20% of breached orgs suffered due to Shadow AI incidents',
     ],
+    ceMeasures: ['Assets: Hardware & Software', 'Assets: Data', 'Secure: Secure Configuration'],
+    learningObjective: 'Understand that "Shadow AI" — using unapproved AI tools with corporate data — is a growing cause of data breaches. Learn how to establish clear AI acceptable-use policies, implement Data Loss Prevention controls, and govern which AI tools employees may use. Reference: CE Pillars — Assets (Hardware & Software, Data), Secure (Secure Configuration).',
   },
   {
     id: 'G',
@@ -766,6 +780,8 @@ export const CYBER_QUEST_SCENARIOS: QuestScenario[] = [
       'Apply AI tool software updates and patches promptly',
       'Train staff on secure use of AI, including data governance',
     ],
+    ceMeasures: ['Assets: Data', 'Secure: Secure Configuration', 'Respond: Incident Response'],
+    learningObjective: 'Understand how prompt injection vulnerabilities in AI tools can be exploited to exfiltrate personal data at scale. Learn why reviewing an AI provider\'s security posture — before adoption — and implementing LLM firewalls are critical controls for organisations using AI. Reference: CE Pillars — Assets (Data), Secure (Secure Configuration), Respond.',
     aiEdition: true,
   },
   {
@@ -818,6 +834,8 @@ export const CYBER_QUEST_SCENARIOS: QuestScenario[] = [
       'Add disclaimers about AI use and potential unintended outcomes',
       'Train employees on AI limitations and hallucination risks',
     ],
+    ceMeasures: ['Assets: Data', 'Secure: Secure Configuration', 'Respond: Incident Response'],
+    learningObjective: 'Learn how AI chatbots can be manipulated through prompt injection to override intended behaviour, resulting in financial loss or reputational damage. Understand the importance of LLM firewalls, human oversight for high-value AI-assisted transactions, and proactive AI risk governance. Reference: CE Pillars — Assets (Data), Secure (Secure Configuration), Respond.',
     aiEdition: true,
   },
   {
@@ -869,6 +887,8 @@ export const CYBER_QUEST_SCENARIOS: QuestScenario[] = [
       'Regularly rotate and audit access keys',
       'Non-Human Identity (NHI) attacks are on the rise — AI access keys are high-value targets',
     ],
+    ceMeasures: ['Assets: Hardware & Software', 'Secure: Access Control', 'Secure: Secure Configuration'],
+    learningObjective: 'Understand why secure API key management is a critical but often overlooked control for cloud-based AI applications. Learn why keys must be unique per application, never stored in source code, and rotated regularly — and how exposed keys can cascade across all connected systems. Reference: CE Pillars — Assets (Hardware & Software), Secure (Access Control, Secure Configuration).',
     aiEdition: true,
   },
 ];
@@ -999,3 +1019,64 @@ export const AVATAR_COLORS = [
   '#06b6d4', '#6366f1', '#a855f7', '#ec4899',
   '#14b8a6', '#f59e0b', '#10b981', '#3b82f6',
 ];
+
+// ─── Team Mode ────────────────────────────────────────────────────────────────
+export const NUM_TEAMS = 3;
+export const TEAM_NAMES  = ['Alpha', 'Bravo', 'Charlie'];
+export const TEAM_COLORS = ['#3b82f6', '#ef4444', '#22c55e'];
+export const TEAM_EMOJIS = ['🔵', '🔴', '🟢'];
+
+// ─── Cyber Quest — Standard Player Roles ─────────────────────────────────────
+// Players are assigned one of 4 standard roles.
+// Facilitator guide maps each role to the scenario's specific responsibilities.
+export const QUEST_ROLE_LABELS = [
+  { label: 'IT / Cyber Personnel',      icon: '💻', color: '#6366f1', desc: 'Technical response & system security' },
+  { label: 'Business Leader / Owner',   icon: '👔', color: '#f97316', desc: 'Resources, strategy & risk decisions' },
+  { label: 'Data Protection Officer',   icon: '📋', color: '#22c55e', desc: 'PDPA compliance & breach notification' },
+  { label: 'Communications / Legal',    icon: '📢', color: '#a855f7', desc: 'Crisis comms, PR & legal risk' },
+];
+
+/**
+ * Deterministic, stable team & role assignment.
+ * Players sorted by ID (lexicographic), then round-robin into NUM_TEAMS teams.
+ * Within each team, members are assigned roles in order (IT → Leader → DPO → Comms).
+ */
+export function getPlayerTeamAndRole(
+  players: { id: string; is_host: boolean }[],
+  playerId: string
+): { teamIdx: number; roleIdx: number } {
+  const sorted = players.filter(p => !p.is_host).sort((a, b) => a.id.localeCompare(b.id));
+  const playerIdx = sorted.findIndex(p => p.id === playerId);
+  if (playerIdx === -1) return { teamIdx: 0, roleIdx: 0 };
+  const teamIdx = playerIdx % NUM_TEAMS;
+  const posInTeam = Math.floor(playerIdx / NUM_TEAMS);
+  const roleIdx = posInTeam % QUEST_ROLE_LABELS.length;
+  return { teamIdx, roleIdx };
+}
+
+// ─── Cyber Essentials CE Category helpers ────────────────────────────────────
+/** Map a question's pillar string to a human-readable CE measure label. */
+export function getCECategory(pillar: string): string {
+  if (pillar.includes('ASSETS – PEOPLE'))             return 'Assets: People';
+  if (pillar.includes('HARDWARE'))                    return 'Assets: Hardware & Software';
+  if (pillar.includes('ASSETS – DATA'))               return 'Assets: Data';
+  if (pillar.includes('VIRUS'))                       return 'Secure: Anti-Virus & Malware';
+  if (pillar.includes('ACCESS CONTROL'))              return 'Secure: Access Control';
+  if (pillar.includes('SECURE CONFIGURATION'))        return 'Secure: Secure Configuration';
+  if (pillar === 'UPDATE')                            return 'Update: Patch Management';
+  if (pillar === 'BACKUP')                            return 'Backup: Data Backup';
+  if (pillar === 'RESPOND')                           return 'Respond: Incident Response';
+  return pillar;
+}
+
+export const CE_PILLAR_COLORS: Record<string, string> = {
+  'Assets: People':                    '#a855f7',
+  'Assets: Hardware & Software':       '#6366f1',
+  'Assets: Data':                      '#3b82f6',
+  'Secure: Anti-Virus & Malware':      '#22c55e',
+  'Secure: Access Control':            '#10b981',
+  'Secure: Secure Configuration':      '#f97316',
+  'Update: Patch Management':          '#f59e0b',
+  'Backup: Data Backup':               '#06b6d4',
+  'Respond: Incident Response':        '#ef4444',
+};
