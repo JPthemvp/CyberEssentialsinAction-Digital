@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-// End-of-game resource guide with QR codes for CSA Singapore programmes
+// End-of-game resource guide — clickable links to CSA Singapore programmes
 
 const RESOURCES = [
   {
@@ -63,25 +63,11 @@ const RESOURCES = [
   },
 ];
 
-function QRCode({ url, size = 140, color = '#000000' }: { url: string; size?: number; color?: string }) {
-  // Use qrserver.com to generate QR codes (external API — works in browser)
-  const encodedUrl = encodeURIComponent(url);
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodedUrl}&color=${color.replace('#', '')}&bgcolor=ffffff&margin=2`;
-  return (
-    <div style={{ background: '#fff', borderRadius: '0.75rem', padding: '0.5rem', display: 'inline-block', boxShadow: '0 2px 8px rgba(0,0,0,0.25)' }}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={qrUrl} alt={`QR code for ${url}`} width={size} height={size} style={{ display: 'block', borderRadius: '0.375rem' }} />
-    </div>
-  );
-}
-
 export default function ResourcesPage() {
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #0f0f1a 0%, #1a1a2e 100%)', color: '#fff', fontFamily: "'Segoe UI', system-ui, sans-serif", padding: '0 0 4rem' }}>
       {/* Header */}
       <div style={{ background: 'rgba(200,16,46,0.12)', borderBottom: '2px solid rgba(200,16,46,0.3)', padding: '2rem', textAlign: 'center' }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/csa-logo.svg" alt="CSA Singapore" style={{ height: 52, marginBottom: '1.25rem', opacity: 0.95 }} />
         <h1 style={{ fontSize: 'clamp(1.75rem, 4vw, 2.75rem)', fontWeight: 900, margin: '0 0 0.5rem', letterSpacing: '-0.5px' }}>🛡️ Stay Cyber Safe</h1>
         <p style={{ color: '#94a3b8', fontSize: '1.1rem', margin: 0 }}>CSA Singapore resources to help protect your organisation</p>
         <div style={{ display: 'inline-flex', gap: '0.5rem', alignItems: 'center', marginTop: '1rem', background: 'rgba(200,16,46,0.15)', border: '1px solid rgba(200,16,46,0.35)', borderRadius: '0.625rem', padding: '0.45rem 1rem' }}>
@@ -96,18 +82,21 @@ export default function ResourcesPage() {
           <div style={{ fontSize: '3rem' }}>💡</div>
           <div>
             <div style={{ fontWeight: 800, fontSize: '1.2rem', marginBottom: '0.4rem' }}>Take the Next Step</div>
-            <p style={{ color: '#a5b4fc', margin: 0, lineHeight: 1.7 }}>Scan any QR code below to access FREE and subsidised resources from CSA Singapore. The <strong style={{ color: '#fff' }}>Cyber Essentials Mark</strong> certification can help your organisation demonstrate strong cybersecurity practices to customers and partners.</p>
+            <p style={{ color: '#a5b4fc', margin: 0, lineHeight: 1.7 }}>Click any card below to access FREE and subsidised resources from CSA Singapore. The <strong style={{ color: '#fff' }}>Cyber Essentials Mark</strong> certification can help your organisation demonstrate strong cybersecurity practices to customers and partners.</p>
           </div>
         </div>
 
         {/* Resource cards grid */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
           {RESOURCES.map(r => (
-            <div key={r.title} style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${r.color}30`, borderRadius: '1.25rem', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', transition: 'border-color 0.2s' }}>
+            <a key={r.title} href={r.url} target="_blank" rel="noopener noreferrer"
+              style={{ background: 'rgba(255,255,255,0.04)', border: `2px solid ${r.color}30`, borderRadius: '1.25rem', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', textDecoration: 'none', color: '#fff', transition: 'all 0.15s', cursor: 'pointer' }}
+              onMouseOver={e => { (e.currentTarget as HTMLElement).style.background = `${r.color}12`; (e.currentTarget as HTMLElement).style.borderColor = `${r.color}70`; (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'; }}
+              onMouseOut={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)'; (e.currentTarget as HTMLElement).style.borderColor = `${r.color}30`; (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'; }}>
               {/* Top row: icon + text */}
               <div style={{ display: 'flex', gap: '0.875rem', alignItems: 'flex-start' }}>
                 <div style={{ fontSize: '2.25rem', flexShrink: 0 }}>{r.icon}</div>
-                <div>
+                <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '0.3rem' }}>
                     <span style={{ fontWeight: 800, fontSize: '1.05rem' }}>{r.title}</span>
                     <span style={{ background: `${r.color}20`, color: r.color, borderRadius: '0.375rem', padding: '0.1rem 0.5rem', fontSize: '0.7rem', fontWeight: 700, whiteSpace: 'nowrap' }}>{r.tag}</span>
@@ -115,15 +104,12 @@ export default function ResourcesPage() {
                   <p style={{ color: '#94a3b8', fontSize: '0.875rem', margin: 0, lineHeight: 1.6 }}>{r.description}</p>
                 </div>
               </div>
-              {/* QR code + link */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', paddingTop: '0.5rem', borderTop: `1px solid ${r.color}20` }}>
-                <QRCode url={r.url} size={140} color={r.color} />
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ color: r.color, fontWeight: 600, fontSize: '0.8rem', marginBottom: '0.2rem' }}>📱 Scan to visit</div>
-                  <div style={{ color: '#475569', fontSize: '0.7rem', wordBreak: 'break-all', maxWidth: 220 }}>{r.url}</div>
-                </div>
+              {/* Link indicator */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', paddingTop: '0.5rem', borderTop: `1px solid ${r.color}20` }}>
+                <span style={{ color: r.color, fontWeight: 700, fontSize: '0.82rem' }}>🔗 Tap to visit</span>
+                <span style={{ color: '#475569', fontSize: '0.72rem', marginLeft: 'auto', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>{r.url}</span>
               </div>
-            </div>
+            </a>
           ))}
         </div>
 

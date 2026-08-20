@@ -438,15 +438,6 @@ ${(qs.answers || []).sort((a, b) => (a.response_time_ms || 99999) - (b.response_
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%)', color: '#fff', fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
 
-      {/* End Game button — always pinned bottom-right */}
-      {room.status !== 'ended' && (
-        <button onClick={() => { if (confirm('End the game for all players?')) updateRoom({ status: 'ended' }); }}
-          style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', zIndex: 100, background: 'rgba(239,68,68,0.15)', border: '2px solid rgba(239,68,68,0.4)', color: '#f87171', borderRadius: '0.75rem', padding: '0.6rem 1.1rem', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer', backdropFilter: 'blur(8px)', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}
-          onMouseOver={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,0.35)'; }}
-          onMouseOut={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,0.15)'; }}>
-          🏁 End Game
-        </button>
-      )}
 
       {/* Play as New confirmation modal */}
       {playAsNewPending !== null && (
@@ -468,9 +459,7 @@ ${(qs.answers || []).sort((a, b) => (a.response_time_ms || 99999) - (b.response_
       {/* Top bar */}
       <div style={{ background: 'rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.1)', padding: '0.875rem 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/csa-logo.svg" alt="CSA" style={{ height: 36, opacity: 0.92 }} />
-          <div style={{ borderLeft: '1px solid rgba(255,255,255,0.15)', paddingLeft: '1rem' }}>
+          <div>
             <div style={{ fontWeight: 800, fontSize: '1rem' }}>CYBER ESSENTIALS IN ACTION</div>
             <div style={{ color: '#94a3b8', fontSize: '0.82rem' }}>{sector?.icon} {sector?.label} · Facilitator{hostPlayer ? `: ${hostPlayer.player_name}` : ''}</div>
           </div>
@@ -973,7 +962,7 @@ ${(qs.answers || []).sort((a, b) => (a.response_time_ms || 99999) - (b.response_
             </div>
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
               <a href="/game" style={{ ...greenBtn, display: 'inline-block', textDecoration: 'none' }}>🏠 New Game</a>
-              <a href="/game/resources" target="_blank" style={{ ...grayBtn, display: 'inline-block', textDecoration: 'none', background: 'rgba(200,16,46,0.2)', borderColor: '#C8102E' }}>🛡️ CSA Resources &amp; QR Codes</a>
+              <a href="/game/resources" target="_blank" style={{ ...grayBtn, display: 'inline-block', textDecoration: 'none', background: 'rgba(200,16,46,0.2)', borderColor: '#C8102E' }}>🛡️ CSA Resources</a>
             </div>
           </div>
         )}

@@ -263,9 +263,6 @@ export default function PlayPage() {
       {/* Top bar */}
       <div style={{ background: 'rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '0.65rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/csa-logo.svg" alt="CSA" style={{ height: 26, opacity: 0.85 }} />
-          <div style={{ width: 1, height: 18, background: 'rgba(255,255,255,0.15)' }} />
           <span style={{ width: 11, height: 11, borderRadius: '50%', background: player.avatar_color, display: 'inline-block' }} />
           <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{player.player_name}</span>
           {myTeam && <span style={{ background: `${myTeam.color}20`, color: myTeam.color, border: `1px solid ${myTeam.color}50`, borderRadius: '0.375rem', padding: '0.1rem 0.45rem', fontSize: '0.72rem', fontWeight: 700 }}>{myTeam.emoji} {myTeam.name}</span>}
@@ -652,7 +649,7 @@ export default function PlayPage() {
             <p style={{ color: '#94a3b8', marginBottom: '2rem' }}>Final score: <strong style={{ color: '#fbbf24' }}>{player.score.toLocaleString()} pts</strong> · Rank #{myRank}</p>
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
               <a href="/game" style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)', color: '#fff', textDecoration: 'none', borderRadius: '0.75rem', padding: '0.875rem 2rem', fontWeight: 700, fontSize: '1.1rem', display: 'inline-block' }}>🏠 Play Again</a>
-              <a href="/game/resources" target="_blank" rel="noopener noreferrer" style={{ background: 'rgba(200,16,46,0.2)', border: '2px solid #C8102E', color: '#fca5a5', textDecoration: 'none', borderRadius: '0.75rem', padding: '0.875rem 2rem', fontWeight: 700, fontSize: '1.1rem', display: 'inline-block' }}>🛡️ CSA Resources &amp; QR Codes</a>
+              <a href="/game/resources" target="_blank" rel="noopener noreferrer" style={{ background: 'rgba(200,16,46,0.2)', border: '2px solid #C8102E', color: '#fca5a5', textDecoration: 'none', borderRadius: '0.75rem', padding: '0.875rem 2rem', fontWeight: 700, fontSize: '1.1rem', display: 'inline-block' }}>🛡️ CSA Resources</a>
             </div>
           </div>
         )}
