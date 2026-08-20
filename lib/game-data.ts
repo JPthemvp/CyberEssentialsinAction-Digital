@@ -1092,27 +1092,104 @@ export function getTeamFromColor(avatarColor: string): number {
 /**
  * Determine a player's Cyber Quest role based on their position within their
  * team (sorted by player ID for determinism).
+ * When scenarioId is provided, roles are shuffled per-scenario so each
+ * player may receive a different role in each scenario — exactly as in the
+ * Cyber Essentials in Action Facilitator Guide.
  * Derives team from avatar_color (no team_id column needed).
  */
 export function getPlayerRoleInTeam(
   players: { id: string; is_host: boolean; avatar_color: string }[],
-  playerId: string
+  playerId: string,
+  scenarioId?: string
 ): number {
   const me = players.find(p => p.id === playerId);
   if (!me) return 0;
   const myTeamIdx = getTeamFromColor(me.avatar_color);
   if (myTeamIdx >= 0) {
-    // Sort same-team members by ID → assign roles in order
+    // Sort same-team members by ID for a stable baseline order
     const teamMembers = players
       .filter(p => !p.is_host && getTeamFromColor(p.avatar_color) === myTeamIdx)
       .sort((a, b) => a.id.localeCompare(b.id));
+    // Shuffle role-slot assignments per scenario so roles rotate across scenarios
+    const roleSlots = scenarioId
+      ? seededShuffle([0, 1, 2, 3], scenarioId + String(myTeamIdx))
+      : [0, 1, 2, 3];
     const pos = teamMembers.findIndex(p => p.id === playerId);
-    return pos >= 0 ? pos % QUEST_ROLE_LABELS.length : 0;
+    if (pos < 0) return 0;
+    return roleSlots[pos % QUEST_ROLE_LABELS.length];
   }
   // Fallback for unassigned players: global round-robin
   const sorted = players.filter(p => !p.is_host).sort((a, b) => a.id.localeCompare(b.id));
   const idx = sorted.findIndex(p => p.id === playerId);
   return idx >= 0 ? idx % QUEST_ROLE_LABELS.length : 0;
+}
+
+/**
+ * Role-specific Cyber Quest MCQ.
+ * Each player gets a question tailored to THEIR assigned role:
+ * "As the [Role], which TWO actions should YOU take?"
+ * Correct answers = that role's tasks from the scenario.
+ * Wrong options = other roles' tasks from the same scenario.
+ * This mirrors the Cyber Essentials in Action Facilitator Guide approach
+ * where each function practises their own responsibilities.
+ */
+export function getRoleQuestMCQ(
+  scenarioId: string,
+  roleIdx: number,
+  difficulty: Difficulty,
+  seed: string
+): ShuffledQuestMCQ {
+  const scenario = CYBER_QUEST_SCENARIOS.find(s => s.id === scenarioId)!;
+  // Use the scenario's role at this index, falling back to role 0
+  const myRole = scenario.roles[roleIdx] || scenario.roles[0];
+
+  // Correct pool = this role's tasks (pick up to 2)
+  const correctPool = seededShuffle([...myRole.tasks], seed + 'c');
+  const correct = correctPool.slice(0, Math.min(2, correctPool.length));
+
+  // If fewer than 2 tasks (rare), supplement with protection tips
+  if (correct.length < 2) {
+    const tipPool = seededShuffle([...scenario.protectionTips], seed + 'ct');
+    for (const tip of tipPool) {
+      if (!correct.includes(tip)) { correct.push(tip); }
+      if (correct.length >= 2) break;
+    }
+  }
+
+  // Distractor pool = other roles' tasks (+ other scenarios on higher difficulty)
+  const otherRoleTasks = scenario.roles
+    .filter((_, i) => i !== (roleIdx % scenario.roles.length))
+    .flatMap(r => r.tasks);
+
+  let distractorPool: string[];
+  if (difficulty === 'easy') {
+    distractorPool = otherRoleTasks;
+  } else if (difficulty === 'medium') {
+    distractorPool = [
+      ...otherRoleTasks,
+      ...CYBER_QUEST_SCENARIOS.filter(s => s.id !== scenarioId).flatMap(s => s.protectionTips),
+    ];
+  } else {
+    // Hard — tasks from other scenarios' same role, hardest to distinguish
+    distractorPool = [
+      ...otherRoleTasks,
+      ...CYBER_QUEST_SCENARIOS.filter(s => s.id !== scenarioId)
+        .flatMap(s => s.roles.flatMap(r => r.tasks)),
+    ];
+  }
+
+  const wrong = seededShuffle(
+    distractorPool.filter(t => !correct.includes(t)),
+    seed + 'w'
+  ).slice(0, 2);
+
+  const allOptions = seededShuffle([...correct, ...wrong], seed + 'a');
+
+  return {
+    question: `As the ${myRole.role}, which TWO actions should YOU take?`,
+    options: allOptions,
+    correctIndices: correct.map(c => allOptions.indexOf(c)),
+  };
 }
 
 // Legacy shim kept for any code still calling it

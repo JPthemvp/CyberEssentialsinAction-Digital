@@ -19,12 +19,23 @@ export function generateRoomCode(): string {
 export interface SpeedTier { points: number; label: string; emoji: string; color: string; }
 export function getSpeedTier(responseTimeMs: number): SpeedTier {
   const s = responseTimeMs / 1000;
-  if (s < 5)  return { points: 100, label: 'Lightning Fast!', emoji: '⚡', color: '#fbbf24' };
-  if (s < 10) return { points: 90,  label: 'Super Fast!',    emoji: '🚀', color: '#22c55e' };
-  if (s < 20) return { points: 75,  label: 'Fast!',          emoji: '💨', color: '#4ade80' };
-  if (s < 30) return { points: 60,  label: 'Good Speed',     emoji: '👍', color: '#94a3b8' };
-  if (s < 45) return { points: 40,  label: 'Average',        emoji: '😐', color: '#64748b' };
-  return          { points: 20,  label: 'Slow…',         emoji: '🐢', color: '#475569' };
+  if (s < 5)  return { points: 100, label: 'Lightning Fast!',              emoji: '⚡', color: '#fbbf24' };
+  if (s < 10) return { points: 90,  label: 'Super Fast!',                  emoji: '🚀', color: '#22c55e' };
+  if (s < 20) return { points: 75,  label: 'Fast!',                        emoji: '💨', color: '#4ade80' };
+  if (s < 30) return { points: 60,  label: 'Good Speed!',                  emoji: '👍', color: '#94a3b8' };
+  if (s < 45) return { points: 40,  label: 'Nice and Steady!',             emoji: '🎯', color: '#64748b' };
+  return          { points: 20,  label: 'Slightly slower this time — you\'ve got this!', emoji: '💪', color: '#6366f1' };
+}
+
+// Cyber Quest: always encouraging — players need time to think and process
+export interface QuestSpeedFeedback { label: string; emoji: string; color: string; }
+export function getQuestSpeedFeedback(responseTimeMs: number): QuestSpeedFeedback {
+  const s = responseTimeMs / 1000;
+  if (s < 30)  return { label: 'Incredibly quick thinking!', emoji: '⚡', color: '#fbbf24' };
+  if (s < 60)  return { label: 'Excellent analysis!',        emoji: '🎯', color: '#22c55e' };
+  if (s < 90)  return { label: 'Thoughtful approach!',       emoji: '💡', color: '#6366f1' };
+  if (s < 120) return { label: 'Careful and considered!',    emoji: '👍', color: '#94a3b8' };
+  return             { label: 'Deep consideration — great!', emoji: '🧠', color: '#a855f7' };
 }
 export function calcAttackPoints(isCorrect: boolean, responseTimeMs: number): number {
   if (!isCorrect) return 0;

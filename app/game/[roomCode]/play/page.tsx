@@ -7,14 +7,14 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 import {
   CYBER_ATTACK_QUESTIONS, CYBER_QUEST_SCENARIOS,
-  getShuffledAttackQuestion, getQuestMCQ,
+  getShuffledAttackQuestion, getRoleQuestMCQ,
   getCECategory, CE_PILLAR_COLORS,
   getSectorTeams, getPlayerRoleInTeam, getTeamFromColor,
   TEAM_COLORS, NUM_TEAMS,
   QUEST_ROLE_LABELS,
   type Difficulty,
 } from '@/lib/game-data';
-import { getSpeedTier } from '@/lib/game-utils';
+import { getSpeedTier, getQuestSpeedFeedback } from '@/lib/game-utils';
 import { ScenarioAnimation } from '@/components/ScenarioAnimation';
 import { QuestionExample } from '@/components/QuestionExample';
 
@@ -221,17 +221,22 @@ export default function PlayPage() {
   const seed = roomCode + (room.mode === 'attack' ? room.current_question_index : room.current_scenario_id);
   const difficulty: Difficulty = room.difficulty || 'medium';
   const shuffledQ = room.mode === 'attack' ? getShuffledAttackQuestion(room.current_question_index, difficulty, seed) : null;
-  const questMCQ = room.mode === 'quest' && room.current_scenario_id ? getQuestMCQ(room.current_scenario_id, difficulty, seed) : null;
   const currentScenario = room.mode === 'quest' && room.current_scenario_id ? CYBER_QUEST_SCENARIOS.find(s => s.id === room.current_scenario_id) : null;
   const nonHostPlayers = allPlayers.filter(p => !p.is_host);
   const myRank = [...nonHostPlayers].sort((a, b) => b.score - a.score).findIndex(p => p.id === playerId) + 1;
-  const speedTier = submitTime !== null ? getSpeedTier(submitTime) : null;
   const sectorTeams = getSectorTeams(room.sector);
   // Team is encoded in avatar_color — no extra DB column required
   const myTeamIdx = getTeamFromColor(player.avatar_color); // -1 if not yet chosen
   const myTeam = myTeamIdx >= 0 ? sectorTeams[myTeamIdx] : null;
-  const myRoleIdx = getPlayerRoleInTeam(allPlayers, playerId);
+  // Roles rotate per scenario (seeded by scenarioId) so players get different roles each round
+  const myRoleIdx = getPlayerRoleInTeam(allPlayers, playerId, room.current_scenario_id ?? undefined);
   const myRole = QUEST_ROLE_LABELS[myRoleIdx];
+  // Role-specific MCQ: each player answers from their own role's perspective
+  const questMCQ = room.mode === 'quest' && room.current_scenario_id
+    ? getRoleQuestMCQ(room.current_scenario_id, myRoleIdx, difficulty, seed)
+    : null;
+  const speedTier = submitTime !== null && room.mode === 'attack' ? getSpeedTier(submitTime) : null;
+  const questSpeed = submitTime !== null && room.mode === 'quest' ? getQuestSpeedFeedback(submitTime) : null;
 
   // Safe palette — deliberately excludes TEAM_COLORS so colour → team mapping stays clean
   const SAFE_COLORS = ['#f97316','#eab308','#06b6d4','#6366f1','#a855f7','#ec4899','#14b8a6','#f59e0b','#10b981'];
@@ -443,6 +448,14 @@ export default function PlayPage() {
         {/* QUEST MCQ */}
         {room.status === 'question' && room.mode === 'quest' && currentScenario && questMCQ && (
           <div>
+            {/* Role reminder at top of question */}
+            <div style={{ background: `${myRole.color}12`, border: `1px solid ${myRole.color}35`, borderRadius: '0.75rem', padding: '0.6rem 1rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <span style={{ fontSize: '1.3rem' }}>{myRole.icon}</span>
+              <div>
+                <span style={{ color: myRole.color, fontWeight: 700, fontSize: '0.8rem' }}>Answering as: {myRole.label}</span>
+                <div style={{ color: '#64748b', fontSize: '0.72rem' }}>{myRole.desc}</div>
+              </div>
+            </div>
             <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '1rem', padding: '1rem 1.25rem', marginBottom: '1rem' }}>
               <div style={{ display: 'flex', gap: '0.65rem', marginBottom: '0.65rem', alignItems: 'center' }}>
                 <span style={{ fontSize: '1.6rem' }}>{currentScenario.icon}</span>
@@ -481,10 +494,10 @@ export default function PlayPage() {
               <div style={{ textAlign: 'center', padding: '1.5rem' }}>
                 <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>✅</div>
                 <h3 style={{ color: '#6366f1', marginBottom: '0.5rem', fontSize: '1.1rem' }}>Answers Submitted!</h3>
-                {speedTier && (
-                  <div style={{ marginBottom: '0.75rem', background: `${speedTier.color}18`, border: `1px solid ${speedTier.color}40`, borderRadius: '0.75rem', padding: '0.5rem 1rem', display: 'inline-block' }}>
-                    <span>{speedTier.emoji}</span>
-                    <span style={{ fontWeight: 700, color: speedTier.color, marginLeft: '0.4rem' }}>{speedTier.label}</span>
+                {questSpeed && (
+                  <div style={{ marginBottom: '0.75rem', background: `${questSpeed.color}18`, border: `1px solid ${questSpeed.color}40`, borderRadius: '0.75rem', padding: '0.5rem 1rem', display: 'inline-block' }}>
+                    <span>{questSpeed.emoji}</span>
+                    <span style={{ fontWeight: 700, color: questSpeed.color, marginLeft: '0.4rem' }}>{questSpeed.label}</span>
                   </div>
                 )}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginBottom: '0.75rem', textAlign: 'left' }}>
@@ -547,11 +560,12 @@ export default function PlayPage() {
           <div>
             {myResult !== null ? (
               <div style={{ textAlign: 'center', marginBottom: '1.25rem', padding: '1.25rem', background: myResult.correct ? 'rgba(34,197,94,0.15)' : myResult.half ? 'rgba(249,115,22,0.15)' : 'rgba(239,68,68,0.15)', borderRadius: '1.25rem', border: `2px solid ${myResult.correct ? '#22c55e' : myResult.half ? '#f97316' : '#ef4444'}` }}>
-                <div style={{ fontSize: '3rem', marginBottom: '0.4rem' }}>{myResult.correct ? '🎉' : myResult.half ? '🙂' : '😔'}</div>
-                <div style={{ fontSize: '1.3rem', fontWeight: 800, color: myResult.correct ? '#4ade80' : myResult.half ? '#fb923c' : '#f87171' }}>
-                  {myResult.correct ? 'Both correct! 🎯' : myResult.half ? 'One correct!' : 'Neither matched'}
+                <div style={{ fontSize: '3rem', marginBottom: '0.4rem' }}>{myResult.correct ? '🎉' : myResult.half ? '🙂' : '💪'}</div>
+                <div style={{ fontSize: '1.3rem', fontWeight: 800, color: myResult.correct ? '#4ade80' : myResult.half ? '#fb923c' : '#a5b4fc' }}>
+                  {myResult.correct ? 'Both correct! 🎯' : myResult.half ? 'One correct — great effort!' : 'Keep learning — every scenario helps!'}
                 </div>
                 {myResult.points > 0 && <div style={{ fontSize: '1.2rem', color: '#fbbf24', fontWeight: 800, marginTop: '0.2rem' }}>+{myResult.points} pts</div>}
+                {questSpeed && <div style={{ marginTop: '0.5rem', color: questSpeed.color, fontWeight: 600, fontSize: '0.88rem' }}>{questSpeed.emoji} {questSpeed.label}</div>}
               </div>
             ) : hasSubmitted ? (
               <div style={{ textAlign: 'center', marginBottom: '1.25rem', padding: '1rem', background: 'rgba(99,102,241,0.08)', borderRadius: '1rem', border: '1px solid rgba(99,102,241,0.2)' }}>
@@ -613,12 +627,16 @@ export default function PlayPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
               {[...nonHostPlayers].sort((a, b) => b.score - a.score).slice(0, 10).map((p, i) => {
                 const isMe = p.id === playerId;
+                const pTeamIdx = getTeamFromColor(p.avatar_color);
+                const pTeam = pTeamIdx >= 0 ? sectorTeams[pTeamIdx] : null;
                 return (
-                  <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', background: isMe ? 'rgba(99,102,241,0.2)' : i === 0 ? 'rgba(251,191,36,0.1)' : 'rgba(255,255,255,0.04)', borderRadius: '0.875rem', padding: '0.8rem 1.1rem', border: isMe ? '2px solid #6366f1' : `1px solid ${i === 0 ? 'rgba(251,191,36,0.3)' : 'transparent'}` }}>
-                    <span style={{ width: 34, textAlign: 'center', fontSize: '1.2rem' }}>{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}</span>
-                    <span style={{ width: 11, height: 11, borderRadius: '50%', background: p.avatar_color, display: 'inline-block', flexShrink: 0 }} />
-                    <span style={{ fontWeight: isMe ? 800 : 600, flex: 1 }}>{p.player_name}{isMe ? ' (You)' : ''}</span>
-                    <span style={{ fontWeight: 800, fontSize: '1.1rem', color: i === 0 ? '#fbbf24' : '#e2e8f0' }}>{p.score.toLocaleString()}</span>
+                  <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: isMe ? 'rgba(99,102,241,0.2)' : i === 0 ? 'rgba(251,191,36,0.08)' : 'rgba(255,255,255,0.04)', borderRadius: '0.875rem', padding: '0.8rem 1.1rem', border: isMe ? '2px solid #6366f1' : `1px solid ${i === 0 ? 'rgba(251,191,36,0.25)' : 'transparent'}` }}>
+                    <span style={{ width: 28, textAlign: 'center', fontWeight: 800, fontSize: '0.95rem', color: i === 0 ? '#fbbf24' : '#64748b', flexShrink: 0 }}>#{i + 1}</span>
+                    <span style={{ fontWeight: isMe ? 800 : 600, flex: 1, fontSize: '0.95rem' }}>{p.player_name}{isMe ? ' (You)' : ''}</span>
+                    {pTeam && (
+                      <span style={{ background: `${pTeam.color}20`, color: pTeam.color, border: `1px solid ${pTeam.color}40`, borderRadius: '0.375rem', padding: '0.1rem 0.45rem', fontSize: '0.68rem', fontWeight: 700, flexShrink: 0 }}>{pTeam.emoji} {pTeam.name}</span>
+                    )}
+                    <span style={{ fontWeight: 800, fontSize: '1.05rem', color: i === 0 ? '#fbbf24' : '#e2e8f0', flexShrink: 0 }}>{p.score.toLocaleString()}</span>
                   </div>
                 );
               })}
