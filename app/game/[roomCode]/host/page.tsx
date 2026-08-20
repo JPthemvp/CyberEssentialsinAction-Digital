@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 import {
@@ -103,6 +103,7 @@ function VerticalBarChart({ distribution, totalPlayers, showCorrect = true }: {
 export default function HostPage() {
   const { roomCode } = useParams<{ roomCode: string }>();
   const [room, setRoom] = useState<Room | null>(null);
+  const roomRef = useRef<Room | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [timeLeft, setTimeLeft] = useState(0);
@@ -110,10 +111,11 @@ export default function HostPage() {
   const [timerActive, setTimerActive] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showQuestionPicker, setShowQuestionPicker] = useState(false);
+  const [playAsNewPending, setPlayAsNewPending] = useState<number | null>(null);
 
   const loadRoom = useCallback(async () => {
     const { data } = await supabase.from('game_rooms').select('*').eq('room_code', roomCode).single();
-    if (data) setRoom(data);
+    if (data) { setRoom(data); roomRef.current = data; }
   }, [roomCode]);
 
   const loadPlayers = useCallback(async () => {
@@ -134,15 +136,16 @@ export default function HostPage() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'game_rooms', filter: `room_code=eq.${roomCode}` }, () => loadRoom())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'game_players', filter: `room_code=eq.${roomCode}` }, () => loadPlayers())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'game_answers', filter: `room_code=eq.${roomCode}` }, async () => {
-        if (room) {
-          const key = room.mode === 'attack' ? `attack_${room.current_question_index}` : `quest_${room.current_scenario_id}`;
+        const cur = roomRef.current;
+        if (cur) {
+          const key = cur.mode === 'attack' ? `attack_${cur.current_question_index}` : `quest_${cur.current_scenario_id}`;
           loadAnswers(key);
         }
       })
       .subscribe();
 
     return () => { supabase.removeChannel(roomSub); };
-  }, [loadRoom, loadPlayers, loadAnswers, room, roomCode]);
+  }, [loadRoom, loadPlayers, loadAnswers, roomCode]);
 
   useEffect(() => {
     if (!timerActive || timeLeft <= 0) return;
@@ -152,7 +155,11 @@ export default function HostPage() {
 
   async function updateRoom(updates: Partial<Room>) {
     await supabase.from('game_rooms').update(updates).eq('room_code', roomCode);
-    setRoom(prev => prev ? { ...prev, ...updates } : prev);
+    setRoom(prev => {
+      const next = prev ? { ...prev, ...updates } : prev;
+      roomRef.current = next;
+      return next;
+    });
   }
 
   async function startMode(mode: GameMode) {
@@ -160,9 +167,25 @@ export default function HostPage() {
   }
 
   async function selectQuestion(idx: number) {
+    if (room && idx === room.current_question_index && (room.status !== 'lobby' || answers.length > 0)) {
+      // Same question already played/in-progress — confirm "play as new"
+      setPlayAsNewPending(idx);
+      setShowQuestionPicker(false);
+      return;
+    }
     await updateRoom({ current_question_index: idx, status: 'lobby' });
     setShowQuestionPicker(false);
     setAnswers([]);
+  }
+
+  async function confirmPlayAsNew() {
+    if (playAsNewPending === null || !room) return;
+    // Delete all existing answers for this question key
+    const key = `attack_${playAsNewPending}`;
+    await supabase.from('game_answers').delete().eq('room_code', roomCode).eq('question_key', key);
+    await updateRoom({ current_question_index: playAsNewPending, status: 'lobby' });
+    setAnswers([]);
+    setPlayAsNewPending(null);
   }
 
   async function startQuestion() {
@@ -254,6 +277,127 @@ export default function HostPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  async function generateReport(format: 'html' | 'csv') {
+    if (!room) return;
+    // Fetch ALL answers for this room
+    const { data: allAnswers } = await supabase.from('game_answers').select('*').eq('room_code', roomCode);
+    const { data: allPlayers } = await supabase.from('game_players').select('*').eq('room_code', roomCode);
+    const hostPlayer = allPlayers?.find(p => p.is_host);
+    const gamePlayers = allPlayers?.filter(p => !p.is_host) || [];
+    const sectorInfo = SECTORS.find(s => s.id === room.sector);
+    const playedAt = new Date().toLocaleString('en-SG', { dateStyle: 'long', timeStyle: 'short' });
+
+    // Build per-question summary
+    const questionSummaries: { key: string; label: string; mode: string; answers: typeof allAnswers }[] = [];
+    const keys = [...new Set((allAnswers || []).map(a => a.question_key))];
+    for (const key of keys) {
+      const qAnswers = (allAnswers || []).filter(a => a.question_key === key);
+      let label = key;
+      if (key.startsWith('attack_')) {
+        const idx = parseInt(key.replace('attack_', ''));
+        label = `Q${idx + 1}: ${CYBER_ATTACK_QUESTIONS[idx]?.question?.slice(0, 60) || ''}…`;
+      } else if (key.startsWith('quest_')) {
+        const sid = key.replace('quest_', '');
+        const sc = CYBER_QUEST_SCENARIOS.find(s => s.id === sid);
+        label = `Scenario ${sid}: ${sc?.label || ''}`;
+      }
+      questionSummaries.push({ key, label, mode: key.startsWith('attack_') ? 'Cyber Attack' : 'Cyber Quest', answers: qAnswers });
+    }
+
+    if (format === 'csv') {
+      const rows = ['Question,Mode,Player,Answer Index / Text,Correct,Points,Response Time (ms)'];
+      for (const qs of questionSummaries) {
+        for (const ans of qs.answers || []) {
+          const playerName = gamePlayers.find(p => p.id === ans.player_id)?.player_name || 'Unknown';
+          const answerVal = ans.answer_index !== null ? ans.answer_index : (ans.answer_text || '');
+          rows.push(`"${qs.label}","${qs.mode}","${playerName}","${answerVal}","${ans.is_correct ? 'Yes' : 'No'}","${ans.points_earned}","${ans.response_time_ms || ''}"`);
+        }
+      }
+      const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = `cyber-essentials-report-${roomCode}.csv`; a.click();
+      URL.revokeObjectURL(url);
+      return;
+    }
+
+    // HTML report
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cyber Essentials in Action — Session Report</title>
+<style>
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f8fafc; color: #1e293b; max-width: 960px; margin: 0 auto; padding: 2rem; }
+  h1 { color: #1e293b; border-bottom: 3px solid #C8102E; padding-bottom: 0.5rem; }
+  h2 { color: #3730a3; margin-top: 2rem; }
+  .meta { background: #1e293b; color: #fff; border-radius: 0.75rem; padding: 1.25rem 1.5rem; margin-bottom: 2rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; }
+  .meta-item label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; display: block; margin-bottom: 0.2rem; }
+  .meta-item span { font-weight: 700; font-size: 1rem; }
+  table { width: 100%; border-collapse: collapse; margin-top: 0.75rem; background: #fff; border-radius: 0.75rem; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  th { background: #1e293b; color: #fff; padding: 0.625rem 0.875rem; text-align: left; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  td { padding: 0.6rem 0.875rem; border-bottom: 1px solid #e2e8f0; font-size: 0.88rem; }
+  tr:last-child td { border-bottom: none; }
+  tr:nth-child(even) { background: #f8fafc; }
+  .correct { color: #16a34a; font-weight: 700; }
+  .wrong { color: #dc2626; }
+  .pill { display: inline-block; padding: 0.1rem 0.5rem; border-radius: 99px; font-size: 0.75rem; font-weight: 700; }
+  .pill-attack { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+  .pill-quest { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+  .q-header { background: #f1f5f9; padding: 0.75rem 1rem; border-radius: 0.5rem; margin: 1.5rem 0 0.5rem; display: flex; align-items: center; gap: 0.75rem; }
+  .q-header strong { flex: 1; font-size: 0.9rem; }
+  .players-list { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; }
+  .player-chip { background: #e0e7ff; color: #3730a3; border-radius: 99px; padding: 0.2rem 0.65rem; font-size: 0.8rem; font-weight: 600; }
+  footer { margin-top: 3rem; color: #94a3b8; font-size: 0.8rem; border-top: 1px solid #e2e8f0; padding-top: 1rem; }
+</style>
+</head>
+<body>
+<h1>🛡️ Cyber Essentials in Action — Session Report</h1>
+<div class="meta">
+  <div class="meta-item"><label>Date &amp; Time</label><span>${playedAt}</span></div>
+  <div class="meta-item"><label>Facilitator</label><span>${hostPlayer?.player_name || 'Unknown'}</span></div>
+  <div class="meta-item"><label>Sector / Clinic</label><span>${sectorInfo?.icon || ''} ${sectorInfo?.label || room.sector}</span></div>
+  <div class="meta-item"><label>Room Code</label><span>${roomCode}</span></div>
+  <div class="meta-item"><label>Total Players</label><span>${gamePlayers.length}</span></div>
+  <div class="meta-item"><label>Mode(s) Played</label><span>${[...new Set(questionSummaries.map(q => q.mode))].join(', ') || 'N/A'}</span></div>
+  <div class="meta-item"><label>Questions / Scenarios</label><span>${questionSummaries.length}</span></div>
+  <div class="meta-item"><label>Difficulty</label><span>${room.difficulty?.charAt(0).toUpperCase() + room.difficulty?.slice(1) || 'Medium'}</span></div>
+</div>
+
+<h2>👥 Players</h2>
+<div class="players-list">
+${gamePlayers.sort((a,b) => b.score - a.score).map((p, i) => `<span class="player-chip">#${i+1} ${p.player_name} — ${p.score.toLocaleString()} pts</span>`).join('\n')}
+</div>
+
+<h2>📊 Question-by-Question Results</h2>
+${questionSummaries.map(qs => {
+  const totalAns = qs.answers?.length || 0;
+  const correct = qs.answers?.filter(a => a.is_correct).length || 0;
+  return `<div class="q-header">
+  <span class="pill ${qs.mode === 'Cyber Attack' ? 'pill-attack' : 'pill-quest'}">${qs.mode}</span>
+  <strong>${qs.label}</strong>
+  <span style="color:#64748b;font-size:0.8rem">${correct}/${totalAns} correct</span>
+</div>
+<table>
+<thead><tr><th>Player</th><th>Answer</th><th>Correct?</th><th>Points</th><th>Response Time</th></tr></thead>
+<tbody>
+${(qs.answers || []).sort((a, b) => (a.response_time_ms || 99999) - (b.response_time_ms || 99999)).map(ans => {
+  const pl = gamePlayers.find(p => p.id === ans.player_id);
+  const ansVal = ans.answer_index !== null ? `Option ${['A','B','C','D'][ans.answer_index] || ans.answer_index}` : (ans.answer_text ? JSON.parse(ans.answer_text || '[]').map((i: number) => ['A','B','C','D'][i]).join(', ') : '—');
+  const rt = ans.response_time_ms ? `${(ans.response_time_ms/1000).toFixed(1)}s` : '—';
+  return `<tr><td>${pl?.player_name || 'Unknown'}</td><td>${ansVal}</td><td class="${ans.is_correct ? 'correct' : 'wrong'}">${ans.is_correct === null ? '—' : ans.is_correct ? '✓ Correct' : '✗ Wrong'}</td><td>${ans.points_earned || 0}</td><td>${rt}</td></tr>`;
+}).join('\n')}
+</tbody></table>`;
+}).join('\n')}
+
+<footer>Generated by Cyber Essentials in Action · Cyber Security Agency of Singapore · ${playedAt}</footer>
+</body></html>`;
+
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `cyber-essentials-report-${roomCode}.html`; a.click();
+    URL.revokeObjectURL(url);
+  }
+
   if (!room) return <div style={{ color: '#fff', textAlign: 'center', padding: '3rem', fontSize: '1.5rem' }}>Loading room...</div>;
 
   const seed = roomCode + (room.mode === 'attack' ? room.current_question_index : room.current_scenario_id);
@@ -262,6 +406,7 @@ export default function HostPage() {
   const questMCQ = room.mode === 'quest' && room.current_scenario_id ? getQuestMCQ(room.current_scenario_id, diff, seed) : null;
   const currentScenario = room.mode === 'quest' && room.current_scenario_id ? CYBER_QUEST_SCENARIOS.find(s => s.id === room.current_scenario_id) : null;
   const sector = SECTORS.find(s => s.id === room.sector);
+  const hostPlayer = players.find(p => p.is_host);
   const nonHostPlayers = players.filter(p => !p.is_host);
   const now = Date.now();
   const activePlayers = nonHostPlayers.filter(p => p.last_seen_at && now - new Date(p.last_seen_at).getTime() < 60000);
@@ -289,6 +434,23 @@ export default function HostPage() {
         </button>
       )}
 
+      {/* Play as New confirmation modal */}
+      {playAsNewPending !== null && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#1e293b', border: '2px solid rgba(249,115,22,0.5)', borderRadius: '1.25rem', padding: '2rem', maxWidth: 440, width: '90%', textAlign: 'center' }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>🔄</div>
+            <h3 style={{ color: '#fb923c', fontSize: '1.2rem', marginBottom: '0.5rem' }}>Play Question as New?</h3>
+            <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+              Q{playAsNewPending + 1} has already been played. This will <strong style={{ color: '#f87171' }}>permanently delete all previous answers</strong> for this question and reset it for a fresh round.
+            </p>
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+              <button onClick={confirmPlayAsNew} style={{ ...orangeBtn }}>🗑️ Clear & Play Again</button>
+              <button onClick={() => setPlayAsNewPending(null)} style={grayBtn}>✕ Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Top bar */}
       <div style={{ background: 'rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.1)', padding: '0.875rem 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -296,7 +458,7 @@ export default function HostPage() {
           <img src="/csa-logo.svg" alt="CSA" style={{ height: 36, opacity: 0.92 }} />
           <div style={{ borderLeft: '1px solid rgba(255,255,255,0.15)', paddingLeft: '1rem' }}>
             <div style={{ fontWeight: 800, fontSize: '1rem' }}>CYBER ESSENTIALS IN ACTION</div>
-            <div style={{ color: '#94a3b8', fontSize: '0.82rem' }}>{sector?.icon} {sector?.label} · Facilitator</div>
+            <div style={{ color: '#94a3b8', fontSize: '0.82rem' }}>{sector?.icon} {sector?.label} · Facilitator{hostPlayer ? `: ${hostPlayer.player_name}` : ''}</div>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
@@ -667,6 +829,20 @@ export default function HostPage() {
                   <span style={{ fontWeight: 800, color: '#fbbf24' }}>{p.score.toLocaleString()}</span>
                 </div>
               ))}
+            </div>
+            <div style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: '1rem', padding: '1.25rem 1.5rem', marginBottom: '1.5rem', textAlign: 'left' }}>
+              <div style={{ color: '#a5b4fc', fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.75rem' }}>📋 Generate Session Report</div>
+              <p style={{ color: '#64748b', fontSize: '0.82rem', marginBottom: '1rem', lineHeight: 1.5 }}>
+                Includes: all questions answered, player responses, scores, date/time, sector, modes, facilitator name, and player list.
+              </p>
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <button onClick={() => generateReport('html')} style={{ ...greenBtn, fontSize: '0.9rem', padding: '0.6rem 1.2rem' }}>
+                  📄 Download HTML Report
+                </button>
+                <button onClick={() => generateReport('csv')} style={{ ...grayBtn, fontSize: '0.9rem', padding: '0.6rem 1.2rem', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', color: '#4ade80' }}>
+                  📊 Download CSV (Excel)
+                </button>
+              </div>
             </div>
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
               <a href="/game" style={{ ...greenBtn, display: 'inline-block', textDecoration: 'none' }}>🏠 New Game</a>
