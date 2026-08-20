@@ -130,10 +130,8 @@ function GameHomePageInner() {
     }}>
       {step === 'home' && (
         <div style={{ textAlign: 'center', maxWidth: 700, width: '100%' }}>
-          {/* Logo & Title */}
+          {/* Title */}
           <div style={{ marginBottom: '1rem' }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/csa-logo.svg" alt="CSA Singapore" style={{ height: 52, marginBottom: '1.5rem', opacity: 0.95 }} />
             <h1 style={{
               fontSize: 'clamp(2rem, 5vw, 3.5rem)',
               fontWeight: 900,
