@@ -1022,13 +1022,56 @@ export const AVATAR_COLORS = [
 
 // ─── Team Mode ────────────────────────────────────────────────────────────────
 export const NUM_TEAMS = 3;
-export const TEAM_NAMES  = ['Alpha', 'Bravo', 'Charlie'];
+/** Consistent colours per team slot regardless of sector */
 export const TEAM_COLORS = ['#3b82f6', '#ef4444', '#22c55e'];
-export const TEAM_EMOJIS = ['🔵', '🔴', '🟢'];
+
+export interface TeamDef { name: string; emoji: string; color: string; }
+
+/** Sector-themed team name sets — 3 teams per sector */
+export const SECTOR_TEAM_SETS: Record<string, TeamDef[]> = {
+  minlaw:    [
+    { name: 'The Advocates',  emoji: '⚖️', color: TEAM_COLORS[0] },
+    { name: 'The Solicitors', emoji: '📜', color: TEAM_COLORS[1] },
+    { name: 'The Chambers',   emoji: '🏛️', color: TEAM_COLORS[2] },
+  ],
+  hia:       [
+    { name: 'The Medics',     emoji: '💊', color: TEAM_COLORS[0] },
+    { name: 'The Clinicians', emoji: '🩺', color: TEAM_COLORS[1] },
+    { name: 'The Healers',    emoji: '🏥', color: TEAM_COLORS[2] },
+  ],
+  finance:   [
+    { name: 'The Analysts',   emoji: '📊', color: TEAM_COLORS[0] },
+    { name: 'The Bankers',    emoji: '🏦', color: TEAM_COLORS[1] },
+    { name: 'The Traders',    emoji: '💹', color: TEAM_COLORS[2] },
+  ],
+  retail:    [
+    { name: 'The Merchants',  emoji: '🛒', color: TEAM_COLORS[0] },
+    { name: 'The Chefs',      emoji: '🍳', color: TEAM_COLORS[1] },
+    { name: 'The Retailers',  emoji: '🛍️', color: TEAM_COLORS[2] },
+  ],
+  tech:      [
+    { name: 'The Devs',       emoji: '⚙️', color: TEAM_COLORS[0] },
+    { name: 'The Engineers',  emoji: '💻', color: TEAM_COLORS[1] },
+    { name: 'The Architects', emoji: '🤖', color: TEAM_COLORS[2] },
+  ],
+  education: [
+    { name: 'The Scholars',   emoji: '📚', color: TEAM_COLORS[0] },
+    { name: 'The Fellows',    emoji: '🎓', color: TEAM_COLORS[1] },
+    { name: 'The Educators',  emoji: '✏️', color: TEAM_COLORS[2] },
+  ],
+  general:   [
+    { name: 'The Lions',      emoji: '🦁', color: TEAM_COLORS[0] },
+    { name: 'The Eagles',     emoji: '🦅', color: TEAM_COLORS[1] },
+    { name: 'The Foxes',      emoji: '🦊', color: TEAM_COLORS[2] },
+  ],
+};
+
+/** Return the 3 team definitions for a given sector (fallback: general). */
+export function getSectorTeams(sectorId: string): TeamDef[] {
+  return SECTOR_TEAM_SETS[sectorId] || SECTOR_TEAM_SETS.general;
+}
 
 // ─── Cyber Quest — Standard Player Roles ─────────────────────────────────────
-// Players are assigned one of 4 standard roles.
-// Facilitator guide maps each role to the scenario's specific responsibilities.
 export const QUEST_ROLE_LABELS = [
   { label: 'IT / Cyber Personnel',      icon: '💻', color: '#6366f1', desc: 'Technical response & system security' },
   { label: 'Business Leader / Owner',   icon: '👔', color: '#f97316', desc: 'Resources, strategy & risk decisions' },
@@ -1037,21 +1080,39 @@ export const QUEST_ROLE_LABELS = [
 ];
 
 /**
- * Deterministic, stable team & role assignment.
- * Players sorted by ID (lexicographic), then round-robin into NUM_TEAMS teams.
- * Within each team, members are assigned roles in order (IT → Leader → DPO → Comms).
+ * Determine a player's Cyber Quest role based on their position within their
+ * team (sorted by player ID for determinism).
+ * Uses `team_id` from DB if available; falls back to round-robin by global index.
  */
+export function getPlayerRoleInTeam(
+  players: { id: string; is_host: boolean; team_id?: number | null }[],
+  playerId: string
+): number {
+  const me = players.find(p => p.id === playerId);
+  if (!me) return 0;
+  const myTeam = me.team_id;
+  if (myTeam !== null && myTeam !== undefined) {
+    // Sort this team's members by ID → assign roles in order
+    const teamMembers = players
+      .filter(p => !p.is_host && p.team_id === myTeam)
+      .sort((a, b) => a.id.localeCompare(b.id));
+    const pos = teamMembers.findIndex(p => p.id === playerId);
+    return pos >= 0 ? pos % QUEST_ROLE_LABELS.length : 0;
+  }
+  // Fallback: global round-robin (for unassigned players)
+  const sorted = players.filter(p => !p.is_host).sort((a, b) => a.id.localeCompare(b.id));
+  const idx = sorted.findIndex(p => p.id === playerId);
+  return idx >= 0 ? idx % QUEST_ROLE_LABELS.length : 0;
+}
+
+// Legacy helper kept for any code still calling it
 export function getPlayerTeamAndRole(
-  players: { id: string; is_host: boolean }[],
+  players: { id: string; is_host: boolean; team_id?: number | null }[],
   playerId: string
 ): { teamIdx: number; roleIdx: number } {
-  const sorted = players.filter(p => !p.is_host).sort((a, b) => a.id.localeCompare(b.id));
-  const playerIdx = sorted.findIndex(p => p.id === playerId);
-  if (playerIdx === -1) return { teamIdx: 0, roleIdx: 0 };
-  const teamIdx = playerIdx % NUM_TEAMS;
-  const posInTeam = Math.floor(playerIdx / NUM_TEAMS);
-  const roleIdx = posInTeam % QUEST_ROLE_LABELS.length;
-  return { teamIdx, roleIdx };
+  const me = players.find(p => p.id === playerId);
+  const teamIdx = me?.team_id ?? 0;
+  return { teamIdx, roleIdx: getPlayerRoleInTeam(players, playerId) };
 }
 
 // ─── Cyber Essentials CE Category helpers ────────────────────────────────────

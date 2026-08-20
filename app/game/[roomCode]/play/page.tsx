@@ -8,8 +8,9 @@ import { createClient } from '@supabase/supabase-js';
 import {
   CYBER_ATTACK_QUESTIONS, CYBER_QUEST_SCENARIOS,
   getShuffledAttackQuestion, getQuestMCQ,
-  getPlayerTeamAndRole, getCECategory, CE_PILLAR_COLORS,
-  TEAM_NAMES, TEAM_COLORS, TEAM_EMOJIS,
+  getCECategory, CE_PILLAR_COLORS,
+  getSectorTeams, getPlayerRoleInTeam,
+  TEAM_COLORS, NUM_TEAMS,
   QUEST_ROLE_LABELS,
   type Difficulty,
 } from '@/lib/game-data';
@@ -30,7 +31,7 @@ interface Room {
   current_question_index: number; current_scenario_id: string | null;
   question_started_at: string | null; difficulty: Difficulty;
 }
-interface Player { id: string; player_name: string; score: number; avatar_color: string; is_host: boolean; }
+interface Player { id: string; player_name: string; score: number; avatar_color: string; is_host: boolean; team_id: number | null; }
 
 const OPTION_COLORS = ['#ef4444', '#f97316', '#22c55e', '#3b82f6'];
 const OPTION_LABELS = ['A', 'B', 'C', 'D'];
@@ -225,8 +226,18 @@ export default function PlayPage() {
   const nonHostPlayers = allPlayers.filter(p => !p.is_host);
   const myRank = [...nonHostPlayers].sort((a, b) => b.score - a.score).findIndex(p => p.id === playerId) + 1;
   const speedTier = submitTime !== null ? getSpeedTier(submitTime) : null;
-  const { teamIdx: myTeamIdx, roleIdx: myRoleIdx } = getPlayerTeamAndRole(allPlayers, playerId);
+  const sectorTeams = getSectorTeams(room.sector);
+  const myTeamIdx = player.team_id ?? -1;
+  const myTeam = myTeamIdx >= 0 ? sectorTeams[myTeamIdx] : null;
+  const myRoleIdx = getPlayerRoleInTeam(allPlayers, playerId);
   const myRole = QUEST_ROLE_LABELS[myRoleIdx];
+
+  async function selectTeam(teamIdx: number) {
+    await supabase.from('game_players').update({ team_id: teamIdx }).eq('id', playerId);
+    setPlayer(prev => prev ? { ...prev, team_id: teamIdx } : prev);
+    // Refresh all players so host sees the update
+    await loadAllPlayers();
+  }
 
   const diffBadge: Record<Difficulty, string> = { easy: '#22c55e', medium: '#f97316', hard: '#ef4444' };
 
@@ -240,7 +251,7 @@ export default function PlayPage() {
           <div style={{ width: 1, height: 18, background: 'rgba(255,255,255,0.15)' }} />
           <span style={{ width: 11, height: 11, borderRadius: '50%', background: player.avatar_color, display: 'inline-block' }} />
           <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{player.player_name}</span>
-          <span style={{ background: `${TEAM_COLORS[myTeamIdx]}20`, color: TEAM_COLORS[myTeamIdx], border: `1px solid ${TEAM_COLORS[myTeamIdx]}50`, borderRadius: '0.375rem', padding: '0.1rem 0.45rem', fontSize: '0.72rem', fontWeight: 700 }}>{TEAM_EMOJIS[myTeamIdx]} {TEAM_NAMES[myTeamIdx]}</span>
+          {myTeam && <span style={{ background: `${myTeam.color}20`, color: myTeam.color, border: `1px solid ${myTeam.color}50`, borderRadius: '0.375rem', padding: '0.1rem 0.45rem', fontSize: '0.72rem', fontWeight: 700 }}>{myTeam.emoji} {myTeam.name}</span>}
           <span style={{ background: `${diffBadge[difficulty]}20`, color: diffBadge[difficulty], borderRadius: '0.375rem', padding: '0.1rem 0.45rem', fontSize: '0.7rem', fontWeight: 700 }}>{difficulty.toUpperCase()}</span>
         </div>
         <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
@@ -260,23 +271,68 @@ export default function PlayPage() {
 
       <div style={{ flex: 1, padding: '1.25rem', maxWidth: 700, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
 
-        {/* LOBBY */}
-        {room.status === 'lobby' && !currentScenario && (
-          <div style={{ textAlign: 'center', paddingTop: '2.5rem' }}>
-            <div style={{ fontSize: '3.5rem', marginBottom: '0.75rem' }}>⏳</div>
-            <h2 style={{ fontSize: '1.6rem', marginBottom: '0.5rem' }}>
+        {/* LOBBY — Team Selection (shown until player picks a team) */}
+        {room.status === 'lobby' && !currentScenario && player.team_id === null && (
+          <div style={{ paddingTop: '1.5rem' }}>
+            <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🏆</div>
+              <h2 style={{ fontSize: '1.5rem', marginBottom: '0.3rem' }}>Choose Your Team</h2>
+              <p style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Pick a team to join — you&apos;ll keep this team for the whole session.</p>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+              {sectorTeams.map((team, ti) => {
+                const teamPlayers = nonHostPlayers.filter(p => p.team_id === ti);
+                return (
+                  <button key={ti} onClick={() => selectTeam(ti)}
+                    style={{ background: `${team.color}15`, border: `3px solid ${team.color}60`, borderRadius: '1.25rem', padding: '1.1rem 1.5rem', cursor: 'pointer', color: '#fff', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '1rem', transition: 'all 0.15s' }}
+                    onMouseOver={e => { (e.currentTarget as HTMLElement).style.background = `${team.color}30`; (e.currentTarget as HTMLElement).style.transform = 'scale(1.02)'; }}
+                    onMouseOut={e => { (e.currentTarget as HTMLElement).style.background = `${team.color}15`; (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}>
+                    <span style={{ fontSize: '2.5rem', flexShrink: 0 }}>{team.emoji}</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 800, fontSize: '1.15rem', color: team.color }}>{team.name}</div>
+                      <div style={{ color: '#94a3b8', fontSize: '0.82rem', marginTop: '0.15rem' }}>
+                        {teamPlayers.length === 0 ? 'Be the first to join!' : `${teamPlayers.length} player${teamPlayers.length > 1 ? 's' : ''}: ${teamPlayers.map(p => p.player_name).join(', ')}`}
+                      </div>
+                    </div>
+                    <span style={{ background: `${team.color}30`, color: team.color, borderRadius: '0.5rem', padding: '0.3rem 0.75rem', fontWeight: 700, fontSize: '0.82rem', flexShrink: 0 }}>{teamPlayers.length} joined</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* LOBBY — Waiting (after team is chosen) */}
+        {room.status === 'lobby' && !currentScenario && player.team_id !== null && (
+          <div style={{ textAlign: 'center', paddingTop: '2rem' }}>
+            {myTeam && (
+              <div style={{ background: `${myTeam.color}15`, border: `2px solid ${myTeam.color}50`, borderRadius: '1rem', padding: '1rem 1.5rem', marginBottom: '1.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.75rem' }}>
+                <span style={{ fontSize: '1.8rem' }}>{myTeam.emoji}</span>
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ color: '#94a3b8', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase' }}>Your Team</div>
+                  <div style={{ color: myTeam.color, fontWeight: 800, fontSize: '1.1rem' }}>{myTeam.name}</div>
+                </div>
+              </div>
+            )}
+            <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>⏳</div>
+            <h2 style={{ fontSize: '1.4rem', marginBottom: '0.5rem' }}>
               {room.mode === 'attack' ? `⚡ Cyber Attack` : '🎭 Cyber Quest'}
             </h2>
-            <p style={{ color: '#94a3b8', fontSize: '1rem' }}>Waiting for the facilitator to start...</p>
-            <div style={{ marginTop: '1.5rem', background: 'rgba(255,255,255,0.04)', borderRadius: '1.25rem', padding: '1.25rem' }}>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', justifyContent: 'center' }}>
-                {nonHostPlayers.map(p => (
-                  <div key={p.id} style={{ background: `${p.avatar_color}20`, border: `1px solid ${p.avatar_color}50`, borderRadius: '2rem', padding: '0.3rem 0.875rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: p.avatar_color, display: 'inline-block' }} />
-                    <span style={{ fontWeight: p.id === playerId ? 800 : 500, fontSize: '0.9rem' }}>{p.player_name}{p.id === playerId ? ' (You)' : ''}</span>
+            <p style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Waiting for the facilitator to start...</p>
+            {/* Teams overview */}
+            <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+              {sectorTeams.map((team, ti) => {
+                const count = nonHostPlayers.filter(p => p.team_id === ti).length;
+                const isMe = player.team_id === ti;
+                return (
+                  <div key={ti} style={{ background: `${team.color}${isMe ? '20' : '0a'}`, border: `2px solid ${team.color}${isMe ? '70' : '30'}`, borderRadius: '0.75rem', padding: '0.5rem 0.875rem', textAlign: 'center', minWidth: 80 }}>
+                    <div style={{ fontSize: '1.2rem' }}>{team.emoji}</div>
+                    <div style={{ fontWeight: 700, color: team.color, fontSize: '0.78rem' }}>{team.name}</div>
+                    <div style={{ color: '#64748b', fontSize: '0.7rem' }}>{count} players</div>
+                    {isMe && <div style={{ color: team.color, fontSize: '0.65rem', fontWeight: 700 }}>← You</div>}
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -292,9 +348,11 @@ export default function PlayPage() {
                 <div style={{ fontWeight: 700, fontSize: '1rem' }}>{myRole.label}</div>
                 <div style={{ color: '#64748b', fontSize: '0.78rem' }}>{myRole.desc}</div>
               </div>
-              <div style={{ marginLeft: 'auto', background: `${TEAM_COLORS[myTeamIdx]}20`, color: TEAM_COLORS[myTeamIdx], border: `1px solid ${TEAM_COLORS[myTeamIdx]}50`, borderRadius: '0.5rem', padding: '0.25rem 0.75rem', fontWeight: 700, fontSize: '0.82rem' }}>
-                {TEAM_EMOJIS[myTeamIdx]} Team {TEAM_NAMES[myTeamIdx]}
-              </div>
+              {myTeam && (
+                <div style={{ marginLeft: 'auto', background: `${myTeam.color}20`, color: myTeam.color, border: `1px solid ${myTeam.color}50`, borderRadius: '0.5rem', padding: '0.25rem 0.75rem', fontWeight: 700, fontSize: '0.82rem' }}>
+                  {myTeam.emoji} {myTeam.name}
+                </div>
+              )}
             </div>
             <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
               <div style={{ fontSize: '3rem', marginBottom: '0.4rem' }}>{currentScenario.icon}</div>
@@ -440,6 +498,11 @@ export default function PlayPage() {
                   );
                 })()}
               </div>
+            ) : hasSubmitted ? (
+              <div style={{ textAlign: 'center', marginBottom: '1.25rem', padding: '1rem', background: 'rgba(99,102,241,0.08)', borderRadius: '1rem', border: '1px solid rgba(99,102,241,0.2)' }}>
+                <div style={{ fontSize: '1.5rem', marginBottom: '0.3rem' }}>⏳</div>
+                <p style={{ color: '#a5b4fc', margin: 0, fontWeight: 600 }}>Calculating your result...</p>
+              </div>
             ) : (
               <div style={{ textAlign: 'center', marginBottom: '1.25rem', padding: '1rem', background: 'rgba(255,255,255,0.04)', borderRadius: '1rem' }}>
                 <p style={{ color: '#94a3b8', margin: 0 }}>You didn&apos;t submit an answer.</p>
@@ -468,6 +531,11 @@ export default function PlayPage() {
                   {myResult.correct ? 'Both correct! 🎯' : myResult.half ? 'One correct!' : 'Neither matched'}
                 </div>
                 {myResult.points > 0 && <div style={{ fontSize: '1.2rem', color: '#fbbf24', fontWeight: 800, marginTop: '0.2rem' }}>+{myResult.points} pts</div>}
+              </div>
+            ) : hasSubmitted ? (
+              <div style={{ textAlign: 'center', marginBottom: '1.25rem', padding: '1rem', background: 'rgba(99,102,241,0.08)', borderRadius: '1rem', border: '1px solid rgba(99,102,241,0.2)' }}>
+                <div style={{ fontSize: '1.5rem', marginBottom: '0.3rem' }}>⏳</div>
+                <p style={{ color: '#a5b4fc', margin: 0, fontWeight: 600 }}>Calculating your result...</p>
               </div>
             ) : (
               <div style={{ textAlign: 'center', marginBottom: '1.25rem', padding: '1rem', background: 'rgba(255,255,255,0.04)', borderRadius: '1rem' }}>

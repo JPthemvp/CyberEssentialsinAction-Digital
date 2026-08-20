@@ -8,8 +8,9 @@ import { createClient } from '@supabase/supabase-js';
 import {
   CYBER_ATTACK_QUESTIONS, CYBER_QUEST_SCENARIOS, SECTORS,
   getShuffledAttackQuestion, getQuestMCQ,
-  getPlayerTeamAndRole, getCECategory, CE_PILLAR_COLORS,
-  TEAM_NAMES, TEAM_COLORS, TEAM_EMOJIS, NUM_TEAMS,
+  getCECategory, CE_PILLAR_COLORS,
+  getSectorTeams, getPlayerRoleInTeam,
+  TEAM_COLORS, NUM_TEAMS,
   QUEST_ROLE_LABELS,
   type QuestScenario, type Difficulty,
 } from '@/lib/game-data';
@@ -25,7 +26,7 @@ const supabase = createClient(
 type GameMode = 'attack' | 'quest';
 type GameStatus = 'lobby' | 'question' | 'reveal' | 'reveal_example' | 'leaderboard' | 'ended';
 
-interface Player { id: string; player_name: string; score: number; avatar_color: string; is_host: boolean; last_seen_at: string | null; }
+interface Player { id: string; player_name: string; score: number; avatar_color: string; is_host: boolean; last_seen_at: string | null; team_id: number | null; }
 interface Room { room_code: string; sector: string; mode: GameMode; status: GameStatus; current_question_index: number; current_scenario_id: string | null; question_started_at: string | null; difficulty: Difficulty; }
 interface Answer { id: string; player_id: string; answer_index: number | null; answer_text: string | null; is_correct: boolean | null; points_earned: number; response_time_ms: number | null; }
 
@@ -413,12 +414,13 @@ ${(qs.answers || []).sort((a, b) => (a.response_time_ms || 99999) - (b.response_
   const nonHostPlayers = players.filter(p => !p.is_host);
 
   // ── Team helpers ──────────────────────────────────────────────────────────
-  function playerTeam(playerId: string) { return getPlayerTeamAndRole(players, playerId).teamIdx; }
-  function playerRole(playerId: string) { return getPlayerTeamAndRole(players, playerId).roleIdx; }
+  const sectorTeams = getSectorTeams(room.sector);
+  function playerTeam(p: Player): number { return p.team_id ?? -1; }
+  function playerRole(playerId: string) { return getPlayerRoleInTeam(players, playerId); }
   const teamScores = Array.from({ length: NUM_TEAMS }, (_, ti) => ({
     teamIdx: ti,
-    score: nonHostPlayers.filter(p => playerTeam(p.id) === ti).reduce((s, p) => s + p.score, 0),
-    count: nonHostPlayers.filter(p => playerTeam(p.id) === ti).length,
+    score: nonHostPlayers.filter(p => playerTeam(p) === ti).reduce((s, p) => s + p.score, 0),
+    count: nonHostPlayers.filter(p => playerTeam(p) === ti).length,
   }));
   const now = Date.now();
   const activePlayers = nonHostPlayers.filter(p => p.last_seen_at && now - new Date(p.last_seen_at).getTime() < 60000);
@@ -654,19 +656,20 @@ ${(qs.answers || []).sort((a, b) => (a.response_time_ms || 99999) - (b.response_
               </div>
               {nonHostPlayers.length === 0
                 ? <div style={{ color: '#64748b', textAlign: 'center', padding: '1.5rem' }}>Waiting for players… share code <strong style={{ color: '#a5b4fc' }}>{roomCode}</strong></div>
-                : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.875rem' }}>
-                    {Array.from({ length: NUM_TEAMS }, (_, ti) => {
-                      const teamPlayers = nonHostPlayers.filter(p => playerTeam(p.id) === ti);
+                : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: '0.875rem' }}>
+                    {sectorTeams.map((team, ti) => {
+                      const teamPlayers = nonHostPlayers.filter(p => playerTeam(p) === ti);
+                      const unassigned = nonHostPlayers.filter(p => playerTeam(p) === -1);
                       return (
-                        <div key={ti} style={{ background: `${TEAM_COLORS[ti]}10`, border: `2px solid ${TEAM_COLORS[ti]}40`, borderRadius: '1rem', padding: '0.875rem' }}>
+                        <div key={ti} style={{ background: `${team.color}10`, border: `2px solid ${team.color}40`, borderRadius: '1rem', padding: '0.875rem' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.6rem' }}>
-                            <span style={{ fontSize: '1.1rem' }}>{TEAM_EMOJIS[ti]}</span>
-                            <span style={{ fontWeight: 800, color: TEAM_COLORS[ti], fontSize: '0.9rem' }}>Team {TEAM_NAMES[ti]}</span>
-                            <span style={{ color: '#64748b', fontSize: '0.75rem', marginLeft: 'auto' }}>{teamPlayers.length} players</span>
+                            <span style={{ fontSize: '1.2rem' }}>{team.emoji}</span>
+                            <span style={{ fontWeight: 800, color: team.color, fontSize: '0.88rem' }}>{team.name}</span>
+                            <span style={{ color: '#64748b', fontSize: '0.72rem', marginLeft: 'auto' }}>{teamPlayers.length} players</span>
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
                             {teamPlayers.length === 0
-                              ? <span style={{ color: '#475569', fontSize: '0.8rem', fontStyle: 'italic' }}>No players yet</span>
+                              ? <span style={{ color: '#475569', fontSize: '0.78rem', fontStyle: 'italic' }}>Waiting for players...</span>
                               : teamPlayers.map(p => {
                                   const isActive = p.last_seen_at && (now - new Date(p.last_seen_at).getTime() < 60000);
                                   const role = QUEST_ROLE_LABELS[playerRole(p.id)];
@@ -678,6 +681,14 @@ ${(qs.answers || []).sort((a, b) => (a.response_time_ms || 99999) - (b.response_
                                     </div>
                                   );
                                 })}
+                            {ti === 0 && unassigned.length > 0 && (
+                              <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: '0.4rem', paddingTop: '0.4rem' }}>
+                                <div style={{ color: '#64748b', fontSize: '0.72rem', marginBottom: '0.25rem' }}>⏳ Choosing team:</div>
+                                {unassigned.map(p => (
+                                  <div key={p.id} style={{ color: '#94a3b8', fontSize: '0.8rem' }}>· {p.player_name}</div>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
                       );
@@ -839,11 +850,15 @@ ${(qs.answers || []).sort((a, b) => (a.response_time_ms || 99999) - (b.response_
                           </div>
                           {rolePlayers.length > 0 && (
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', marginBottom: '0.4rem' }}>
-                              {rolePlayers.map(p => (
-                                <span key={p.id} style={{ background: `${TEAM_COLORS[playerTeam(p.id)]}25`, color: TEAM_COLORS[playerTeam(p.id)], borderRadius: '99px', padding: '0.1rem 0.5rem', fontSize: '0.72rem', fontWeight: 700 }}>
-                                  {TEAM_EMOJIS[playerTeam(p.id)]} {p.player_name}
+                              {rolePlayers.map(p => {
+                              const ti = playerTeam(p);
+                              const team = ti >= 0 ? sectorTeams[ti] : null;
+                              return (
+                                <span key={p.id} style={{ background: `${TEAM_COLORS[ti >= 0 ? ti : 0]}25`, color: TEAM_COLORS[ti >= 0 ? ti : 0], borderRadius: '99px', padding: '0.1rem 0.5rem', fontSize: '0.72rem', fontWeight: 700 }}>
+                                  {team?.emoji ?? '⬜'} {p.player_name}
                                 </span>
-                              ))}
+                              );
+                            })}
                             </div>
                           )}
                           {role.tasks.slice(0, 2).map((t, ti) => <div key={ti} style={{ color: '#94a3b8', fontSize: '0.75rem', marginBottom: '0.2rem' }}>• {t}</div>)}
@@ -891,24 +906,27 @@ ${(qs.answers || []).sort((a, b) => (a.response_time_ms || 99999) - (b.response_
 
             {/* Team scores */}
             <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-              {[...teamScores].sort((a, b) => b.score - a.score).map((ts, rank) => (
-                <div key={ts.teamIdx} style={{ background: `${TEAM_COLORS[ts.teamIdx]}15`, border: `2px solid ${TEAM_COLORS[ts.teamIdx]}50`, borderRadius: '1rem', padding: '0.875rem 1.5rem', textAlign: 'center', minWidth: 130 }}>
-                  <div style={{ fontSize: '1.5rem', marginBottom: '0.15rem' }}>{rank === 0 ? '🥇' : rank === 1 ? '🥈' : '🥉'} {TEAM_EMOJIS[ts.teamIdx]}</div>
-                  <div style={{ fontWeight: 800, color: TEAM_COLORS[ts.teamIdx], fontSize: '1.1rem' }}>Team {TEAM_NAMES[ts.teamIdx]}</div>
-                  <div style={{ fontWeight: 900, fontSize: '1.4rem', color: '#fbbf24' }}>{ts.score.toLocaleString()}</div>
-                  <div style={{ color: '#64748b', fontSize: '0.72rem' }}>{ts.count} players</div>
-                </div>
-              ))}
+              {[...teamScores].sort((a, b) => b.score - a.score).map((ts, rank) => {
+                const team = sectorTeams[ts.teamIdx];
+                return (
+                  <div key={ts.teamIdx} style={{ background: `${team.color}15`, border: `2px solid ${team.color}50`, borderRadius: '1rem', padding: '0.875rem 1.5rem', textAlign: 'center', minWidth: 130 }}>
+                    <div style={{ fontSize: '1.5rem', marginBottom: '0.15rem' }}>{rank === 0 ? '🥇' : rank === 1 ? '🥈' : '🥉'} {team.emoji}</div>
+                    <div style={{ fontWeight: 800, color: team.color, fontSize: '1rem' }}>{team.name}</div>
+                    <div style={{ fontWeight: 900, fontSize: '1.4rem', color: '#fbbf24' }}>{ts.score.toLocaleString()}</div>
+                    <div style={{ color: '#64748b', fontSize: '0.72rem' }}>{ts.count} players</div>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Individual leaderboard */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxWidth: 500, margin: '0 auto 2rem' }}>
               {[...nonHostPlayers].sort((a, b) => b.score - a.score).slice(0, 10).map((p, i) => {
-                const ti = playerTeam(p.id);
+                const ti = playerTeam(p);
                 return (
                   <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: i === 0 ? 'rgba(251,191,36,0.15)' : 'rgba(255,255,255,0.04)', borderRadius: '0.75rem', padding: '0.875rem 1.25rem', border: `1px solid ${i === 0 ? 'rgba(251,191,36,0.3)' : 'transparent'}` }}>
                     <span style={{ fontSize: '1.4rem', width: 34 }}>{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}</span>
-                    <span style={{ fontSize: '0.9rem' }} title={`Team ${TEAM_NAMES[ti]}`}>{TEAM_EMOJIS[ti]}</span>
+                    <span style={{ fontSize: '0.9rem' }} title={ti >= 0 ? sectorTeams[ti]?.name : 'No team'}>{ti >= 0 ? sectorTeams[ti]?.emoji : '⬜'}</span>
                     <span style={{ width: 12, height: 12, borderRadius: '50%', background: p.avatar_color, display: 'inline-block' }} />
                     <span style={{ fontWeight: 700, flex: 1 }}>{p.player_name}</span>
                     <span style={{ fontWeight: 800, fontSize: '1.25rem', color: i === 0 ? '#fbbf24' : '#e2e8f0' }}>{p.score.toLocaleString()}</span>
