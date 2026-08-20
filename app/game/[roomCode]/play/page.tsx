@@ -233,12 +233,22 @@ export default function PlayPage() {
   const myRoleIdx = getPlayerRoleInTeam(allPlayers, playerId);
   const myRole = QUEST_ROLE_LABELS[myRoleIdx];
 
+  // Safe palette — deliberately excludes TEAM_COLORS so colour → team mapping stays clean
+  const SAFE_COLORS = ['#f97316','#eab308','#06b6d4','#6366f1','#a855f7','#ec4899','#14b8a6','#f59e0b','#10b981'];
+
   async function selectTeam(teamIdx: number) {
     const teamColor = TEAM_COLORS[teamIdx];
-    // Store team choice in avatar_color — works without any DB schema change
     await supabase.from('game_players').update({ avatar_color: teamColor }).eq('id', playerId);
     setPlayer(prev => prev ? { ...prev, avatar_color: teamColor } : prev);
-    await loadAllPlayers(); // host sees update immediately
+    await loadAllPlayers();
+  }
+
+  async function resetTeam() {
+    // Reset to a random safe (non-team) colour → triggers team picker to show again
+    const resetColor = SAFE_COLORS[Math.floor(Math.random() * SAFE_COLORS.length)];
+    await supabase.from('game_players').update({ avatar_color: resetColor }).eq('id', playerId);
+    setPlayer(prev => prev ? { ...prev, avatar_color: resetColor } : prev);
+    await loadAllPlayers();
   }
 
   const diffBadge: Record<Difficulty, string> = { easy: '#22c55e', medium: '#f97316', hard: '#ef4444' };
@@ -308,12 +318,21 @@ export default function PlayPage() {
         {room.status === 'lobby' && !currentScenario && myTeamIdx >= 0 && (
           <div style={{ textAlign: 'center', paddingTop: '2rem' }}>
             {myTeam && (
-              <div style={{ background: `${myTeam.color}15`, border: `2px solid ${myTeam.color}50`, borderRadius: '1rem', padding: '1rem 1.5rem', marginBottom: '1.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.75rem' }}>
-                <span style={{ fontSize: '1.8rem' }}>{myTeam.emoji}</span>
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ color: '#94a3b8', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase' }}>Your Team</div>
-                  <div style={{ color: myTeam.color, fontWeight: 800, fontSize: '1.1rem' }}>{myTeam.name}</div>
+              <div style={{ marginBottom: '1.25rem' }}>
+                <div style={{ background: `${myTeam.color}15`, border: `2px solid ${myTeam.color}50`, borderRadius: '1rem', padding: '1rem 1.5rem', marginBottom: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <span style={{ fontSize: '1.8rem' }}>{myTeam.emoji}</span>
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ color: '#94a3b8', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase' }}>Your Team</div>
+                    <div style={{ color: myTeam.color, fontWeight: 800, fontSize: '1.1rem' }}>{myTeam.name}</div>
+                  </div>
                 </div>
+                <br />
+                <button onClick={resetTeam}
+                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '0.625rem', color: '#94a3b8', fontSize: '0.82rem', fontWeight: 600, padding: '0.4rem 1rem', cursor: 'pointer' }}
+                  onMouseOver={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.12)'; (e.currentTarget as HTMLElement).style.color = '#e2e8f0'; }}
+                  onMouseOut={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)'; (e.currentTarget as HTMLElement).style.color = '#94a3b8'; }}>
+                  🔄 Change Team
+                </button>
               </div>
             )}
             <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>⏳</div>

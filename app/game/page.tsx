@@ -102,7 +102,8 @@ function GameHomePageInner() {
         room_code: code,
         player_name: resolvedName,
         is_host: false,
-        avatar_color: ['#ef4444','#f97316','#22c55e','#06b6d4','#a855f7','#ec4899'][Math.floor(Math.random()*6)],
+        // Use only colours NOT in TEAM_COLORS so every new player starts unassigned
+        avatar_color: ['#f97316','#eab308','#06b6d4','#6366f1','#a855f7','#ec4899','#14b8a6','#f59e0b','#10b981'][Math.floor(Math.random()*9)],
       }).select('id').single();
       if (playerErr) throw playerErr;
 
