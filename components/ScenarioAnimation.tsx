@@ -172,15 +172,48 @@ const scenes: Record<string, React.ReactNode> = {
   ),
 };
 
+// Real simulation videos for scenarios that have them
+const SCENARIO_VIDEOS: Record<string, { src: string; type: string }> = {
+  A: { src: '/videos/scenario-a.mov', type: 'video/mp4' },
+  B: { src: '/videos/scenario-b.mov', type: 'video/mp4' },
+  C: { src: '/videos/scenario-c.mov', type: 'video/mp4' },
+  G: { src: '/videos/scenario-g.mov', type: 'video/mp4' },
+  H: { src: '/videos/scenario-h.mp4', type: 'video/mp4' },
+};
+
 export function ScenarioAnimation({ scenarioId, label }: { scenarioId: string; label?: string }) {
   const scene = scenes[scenarioId];
-  if (!scene) return null;
+  const video = SCENARIO_VIDEOS[scenarioId];
+  if (!scene && !video) return null;
   return (
     <div>
-      <div style={{ color: '#64748b', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
-        📽 {label || 'What it looks like'} — animated simulation
-      </div>
-      {scene}
+      {/* Real simulation video — click to play, no autoplay */}
+      {video && (
+        <div style={{ marginBottom: '1rem' }}>
+          <div style={{ color: '#64748b', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+            🎬 {label || 'Simulation'} — Real-World Video
+          </div>
+          <video
+            controls
+            preload="metadata"
+            style={{ width: '100%', borderRadius: '0.875rem', background: '#000', display: 'block', maxHeight: 360 }}
+          >
+            <source src={video.src} type={video.type} />
+            <source src={video.src} type="video/quicktime" />
+            Your browser does not support this video format.
+          </video>
+        </div>
+      )}
+
+      {/* Animated simulation — always shown below the video (or alone if no video) */}
+      {scene && (
+        <div>
+          <div style={{ color: '#64748b', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+            📽 {label || 'What it looks like'} — animated simulation
+          </div>
+          {scene}
+        </div>
+      )}
     </div>
   );
 }
