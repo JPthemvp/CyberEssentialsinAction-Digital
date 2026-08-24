@@ -53,14 +53,6 @@ const RESOURCES = [
     color: '#a855f7',
     tag: 'Advisory Service',
   },
-  {
-    title: 'CSA Singapore',
-    description: 'The Cyber Security Agency of Singapore — your national cybersecurity authority. Explore all programmes, resources, and alerts.',
-    icon: '🏛️',
-    url: 'https://www.csa.gov.sg',
-    color: '#C8102E',
-    tag: 'Official Site',
-  },
 ];
 
 export default function ResourcesPage() {

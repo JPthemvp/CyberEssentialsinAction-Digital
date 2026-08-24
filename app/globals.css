@@ -1,26 +1,85 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #0f0f1a;
+  --foreground: #ededed;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  -webkit-text-size-adjust: 100%; /* prevent iOS font boosting */
+  touch-action: manipulation;     /* faster tap response, no double-tap delay */
+}
+
+/* ─── Touch-target minimum (48px) for all game buttons ──────────────────── */
+.game-btn { min-height: 48px; }
+
+/* ─── Play page — top bar ────────────────────────────────────────────────── */
+.game-topbar {
+  padding: 0.65rem 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  flex-shrink: 0;
+  min-height: 56px;
+}
+.game-topbar-left  { display: flex; align-items: center; gap: 0.6rem; flex-shrink: 1; overflow: hidden; min-width: 0; }
+.game-topbar-right { display: flex; align-items: center; gap: 0.875rem; flex-shrink: 0; }
+.game-topbar-name  { font-weight: 700; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
+
+/* ─── Play page — main scroll area ──────────────────────────────────────── */
+.game-main { flex: 1; padding: 1.25rem; max-width: 700px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+
+/* ─── Attack answer grid — 2 columns on tablet+, 1 on small phone ───────── */
+.attack-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; }
+
+/* ─── Icon picker — 5 cols on mobile, 10 on wider screens ───────────────── */
+.icon-picker-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 0.35rem; }
+
+/* ─── Join page outer wrapper ────────────────────────────────────────────── */
+.join-page { padding: 2rem 1.5rem; }
+.join-home-btns { display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap; margin-top: 2.5rem; }
+.join-home-btn  { min-width: 200px; }
+
+/* ─── Leaderboard team badge — hide name text on very narrow screens ─────── */
+.lb-team-badge-name { display: inline; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOBILE  ≤ 640 px  (iPhone SE 375, iPhone 15 393, Samsung S24 412 …)
+═══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  /* Top bar tighter */
+  .game-topbar { padding: 0.5rem 0.75rem; min-height: 52px; }
+  .game-topbar-left  { gap: 0.4rem; }
+  .game-topbar-right { gap: 0.6rem; }
+  .game-topbar-name  { max-width: 90px; font-size: 0.85rem; }
+
+  /* Main area reduced padding */
+  .game-main { padding: 0.875rem 0.75rem; }
+
+  /* Answer grid: 1 column on phones so text never wraps mid-word */
+  .attack-grid { grid-template-columns: 1fr; gap: 0.55rem; }
+
+  /* Icon picker: 5 columns (≥44px per cell on 375px screen) */
+  .icon-picker-grid { grid-template-columns: repeat(5, 1fr); gap: 0.4rem; }
+
+  /* Join page: tighter outer padding */
+  .join-page { padding: 1.25rem 1rem; }
+  .join-home-btns { gap: 0.875rem; margin-top: 1.75rem; }
+  .join-home-btn  { min-width: 0; flex: 1 1 100%; max-width: 320px; }
+
+  /* Leaderboard team badge: show emoji only, drop name string */
+  .lb-team-badge-name { display: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   VERY SMALL  ≤ 390 px  (iPhone SE 375, older Androids)
+═══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 390px) {
+  .game-topbar-name { max-width: 70px; font-size: 0.8rem; }
+  .game-main { padding: 0.75rem 0.625rem; }
 }

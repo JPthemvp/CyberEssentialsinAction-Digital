@@ -123,14 +123,13 @@ function GameHomePageInner() {
   }
 
   return (
-    <div style={{
+    <div className="join-page" style={{
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%)',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '2rem',
       fontFamily: "'Segoe UI', system-ui, sans-serif",
     }}>
       {step === 'home' && (
@@ -166,21 +165,22 @@ function GameHomePageInner() {
           </div>
 
           {/* Two big action buttons */}
-          <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center', flexWrap: 'wrap', marginTop: '2.5rem' }}>
+          <div className="join-home-btns">
             <button
+              className="join-home-btn"
               onClick={() => setStep('sector')}
               style={{
                 background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '1rem',
-                padding: '1.5rem 2.5rem',
-                fontSize: '1.5rem',
+                padding: '1.25rem 2rem',
+                fontSize: 'clamp(1.1rem, 4vw, 1.5rem)',
                 fontWeight: 700,
                 cursor: 'pointer',
                 boxShadow: '0 8px 32px rgba(99,102,241,0.4)',
                 transition: 'transform 0.15s, box-shadow 0.15s',
-                minWidth: 220,
+                minHeight: 56,
               }}
               onMouseOver={e => { (e.target as HTMLElement).style.transform = 'translateY(-3px)'; }}
               onMouseOut={e => { (e.target as HTMLElement).style.transform = 'none'; }}
@@ -188,19 +188,20 @@ function GameHomePageInner() {
               🎯 Host Game
             </button>
             <button
+              className="join-home-btn"
               onClick={() => setStep('join')}
               style={{
                 background: 'linear-gradient(135deg, #0ea5e9, #06b6d4)',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '1rem',
-                padding: '1.5rem 2.5rem',
-                fontSize: '1.5rem',
+                padding: '1.25rem 2rem',
+                fontSize: 'clamp(1.1rem, 4vw, 1.5rem)',
                 fontWeight: 700,
                 cursor: 'pointer',
                 boxShadow: '0 8px 32px rgba(6,182,212,0.4)',
                 transition: 'transform 0.15s',
-                minWidth: 220,
+                minHeight: 56,
               }}
               onMouseOver={e => { (e.target as HTMLElement).style.transform = 'translateY(-3px)'; }}
               onMouseOut={e => { (e.target as HTMLElement).style.transform = 'none'; }}
@@ -310,7 +311,7 @@ function GameHomePageInner() {
             {/* Icon picker */}
             <div style={{ marginBottom: '1.25rem' }}>
               <label style={labelStyle}>Choose Your Icon</label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: '0.35rem', marginTop: '0.5rem' }}>
+              <div className="icon-picker-grid" style={{ marginTop: '0.5rem' }}>
                 {PLAYER_ICONS.map(icon => (
                   <button key={icon} onClick={() => setSelectedIcon(icon)}
                     style={{ fontSize: '1.5rem', background: selectedIcon === icon ? 'rgba(99,102,241,0.35)' : 'rgba(255,255,255,0.06)', border: `2px solid ${selectedIcon === icon ? '#6366f1' : 'transparent'}`, borderRadius: '0.625rem', padding: '0.35rem', cursor: 'pointer', transition: 'all 0.1s', lineHeight: 1 }}

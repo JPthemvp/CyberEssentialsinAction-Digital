@@ -262,28 +262,28 @@ export default function PlayPage() {
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #0f0f1a 0%, #1a1a2e 100%)', color: '#fff', fontFamily: "'Segoe UI', system-ui, sans-serif", display: 'flex', flexDirection: 'column' }}>
       {/* Top bar */}
-      <div style={{ background: 'rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '0.65rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-          {(() => { const { icon, name } = parsePlayerName(player.player_name); return (<><span style={{ fontSize: '1.3rem', lineHeight: 1 }}>{icon}</span><span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{name}</span></>); })()}
-          {myTeam && <span style={{ background: `${myTeam.color}20`, color: myTeam.color, border: `1px solid ${myTeam.color}50`, borderRadius: '0.375rem', padding: '0.1rem 0.45rem', fontSize: '0.72rem', fontWeight: 700 }}>{myTeam.emoji} {myTeam.name}</span>}
-          <span style={{ background: `${diffBadge[difficulty]}20`, color: diffBadge[difficulty], borderRadius: '0.375rem', padding: '0.1rem 0.45rem', fontSize: '0.7rem', fontWeight: 700 }}>{difficulty.toUpperCase()}</span>
+      <div className="game-topbar">
+        <div className="game-topbar-left">
+          {(() => { const { icon, name } = parsePlayerName(player.player_name); return (<><span style={{ fontSize: '1.3rem', lineHeight: 1, flexShrink: 0 }}>{icon}</span><span className="game-topbar-name">{name}</span></>); })()}
+          {myTeam && <span style={{ background: `${myTeam.color}20`, color: myTeam.color, border: `1px solid ${myTeam.color}50`, borderRadius: '0.375rem', padding: '0.1rem 0.4rem', fontSize: '0.7rem', fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>{myTeam.emoji}</span>}
+          <span style={{ background: `${diffBadge[difficulty]}20`, color: diffBadge[difficulty], borderRadius: '0.375rem', padding: '0.1rem 0.4rem', fontSize: '0.68rem', fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>{difficulty.toUpperCase()}</span>
         </div>
-        <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
-          {timerRunning && <CircularTimer timeLeft={timeLeft} totalTime={totalTime} size={72} />}
+        <div className="game-topbar-right">
+          {timerRunning && <CircularTimer timeLeft={timeLeft} totalTime={totalTime} size={60} />}
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontWeight: 800, fontSize: '1.3rem', color: '#fbbf24' }}>{player.score.toLocaleString()}</div>
-            <div style={{ color: '#64748b', fontSize: '0.65rem', textTransform: 'uppercase' }}>pts</div>
+            <div style={{ fontWeight: 800, fontSize: '1.2rem', color: '#fbbf24', lineHeight: 1 }}>{player.score.toLocaleString()}</div>
+            <div style={{ color: '#64748b', fontSize: '0.6rem', textTransform: 'uppercase' }}>pts</div>
           </div>
           {myRank > 0 && (
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontWeight: 800, fontSize: '1.3rem' }}>#{myRank}</div>
-              <div style={{ color: '#64748b', fontSize: '0.65rem', textTransform: 'uppercase' }}>rank</div>
+              <div style={{ fontWeight: 800, fontSize: '1.2rem', lineHeight: 1 }}>#{myRank}</div>
+              <div style={{ color: '#64748b', fontSize: '0.6rem', textTransform: 'uppercase' }}>rank</div>
             </div>
           )}
         </div>
       </div>
 
-      <div style={{ flex: 1, padding: '1.25rem', maxWidth: 700, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
+      <div className="game-main">
 
         {/* LOBBY — Team Selection (shown until player picks a team) */}
         {room.status === 'lobby' && !currentScenario && myTeamIdx === -1 && (
@@ -408,7 +408,7 @@ export default function PlayPage() {
               <p style={{ fontSize: '1.25rem', fontWeight: 600, lineHeight: 1.5, margin: 0 }}>{shuffledQ.question}</p>
             </div>
             {!hasSubmitted ? (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+              <div className="attack-grid">
                 {shuffledQ.options.map((opt, i) => (
                   <button key={i} onClick={() => submitAttackAnswer(i)}
                     style={{ background: `${OPTION_COLORS[i]}20`, border: `3px solid ${OPTION_COLORS[i]}60`, borderRadius: '1rem', padding: '1.1rem', cursor: 'pointer', color: '#fff', textAlign: 'left', transition: 'all 0.1s', fontSize: '0.95rem', lineHeight: 1.4 }}
@@ -633,7 +633,7 @@ export default function PlayPage() {
                     <span style={{ fontSize: '1.3rem', flexShrink: 0, lineHeight: 1 }}>{pIcon}</span>
                     <span style={{ fontWeight: isMe ? 800 : 600, flex: 1, fontSize: '0.9rem' }}>{pName}{isMe ? ' (You)' : ''}</span>
                     {pTeam && (
-                      <span style={{ background: `${pTeam.color}20`, color: pTeam.color, border: `1px solid ${pTeam.color}40`, borderRadius: '0.375rem', padding: '0.1rem 0.4rem', fontSize: '0.65rem', fontWeight: 700, flexShrink: 0 }}>{pTeam.emoji} {pTeam.name}</span>
+                      <span style={{ background: `${pTeam.color}20`, color: pTeam.color, border: `1px solid ${pTeam.color}40`, borderRadius: '0.375rem', padding: '0.1rem 0.4rem', fontSize: '0.65rem', fontWeight: 700, flexShrink: 0 }}>{pTeam.emoji}<span className="lb-team-badge-name"> {pTeam.name}</span></span>
                     )}
                     <span style={{ fontWeight: 800, fontSize: '1rem', color: i === 0 ? '#fbbf24' : '#e2e8f0', flexShrink: 0 }}>{p.score.toLocaleString()}</span>
                   </div>
