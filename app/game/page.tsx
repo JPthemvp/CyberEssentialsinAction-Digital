@@ -6,6 +6,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { SECTORS } from '@/lib/game-data';
 import { generateRoomCode } from '@/lib/game-utils';
+import { PLAYER_ICONS, encodePlayerName, parsePlayerName } from '@/lib/player-utils';
 import { createClient } from '@supabase/supabase-js';
 
 function getSupabase() {
@@ -24,6 +25,7 @@ function GameHomePageInner() {
   const [selectedSector, setSelectedSector] = useState('');
   const [hostName, setHostName] = useState('');
   const [playerName, setPlayerName] = useState('');
+  const [selectedIcon, setSelectedIcon] = useState<string>(() => PLAYER_ICONS[Math.floor(Math.random() * PLAYER_ICONS.length)]);
   const [joinCode, setJoinCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -84,19 +86,22 @@ function GameHomePageInner() {
       if (roomErr || !room) throw new Error('Room not found. Check the code and try again.');
       if (room.status === 'ended') throw new Error('This game has already ended.');
 
-      // Resolve duplicate names: if "Alex" exists, use "Alex (1)", "Alex (2)", etc.
-      const baseName = playerName.trim();
+      // Resolve duplicate display names (ignoring icon prefix)
+      const displayName = playerName.trim();
       const { data: existingPlayers } = await getSupabase()
         .from('game_players')
         .select('player_name')
         .eq('room_code', code);
-      const takenNames = new Set((existingPlayers || []).map((p: { player_name: string }) => p.player_name));
-      let resolvedName = baseName;
-      if (takenNames.has(resolvedName)) {
+      const takenDisplayNames = new Set(
+        (existingPlayers || []).map((p: { player_name: string }) => parsePlayerName(p.player_name).name)
+      );
+      let resolvedDisplay = displayName;
+      if (takenDisplayNames.has(resolvedDisplay)) {
         let n = 1;
-        while (takenNames.has(`${baseName} (${n})`)) n++;
-        resolvedName = `${baseName} (${n})`;
+        while (takenDisplayNames.has(`${displayName} (${n})`)) n++;
+        resolvedDisplay = `${displayName} (${n})`;
       }
+      const resolvedName = encodePlayerName(selectedIcon, resolvedDisplay);
 
       const { data: newPlayer, error: playerErr } = await getSupabase().from('game_players').insert({
         room_code: code,
@@ -298,10 +303,30 @@ function GameHomePageInner() {
 
       {/* Step: Join Game */}
       {step === 'join' && (
-        <div style={{ maxWidth: 440, width: '100%' }}>
+        <div style={{ maxWidth: 480, width: '100%' }}>
           <button onClick={() => setStep('home')} style={backBtn}>← Back</button>
           <h2 style={titleStyle}>Join a Game</h2>
           <div style={card}>
+            {/* Icon picker */}
+            <div style={{ marginBottom: '1.25rem' }}>
+              <label style={labelStyle}>Choose Your Icon</label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: '0.35rem', marginTop: '0.5rem' }}>
+                {PLAYER_ICONS.map(icon => (
+                  <button key={icon} onClick={() => setSelectedIcon(icon)}
+                    style={{ fontSize: '1.5rem', background: selectedIcon === icon ? 'rgba(99,102,241,0.35)' : 'rgba(255,255,255,0.06)', border: `2px solid ${selectedIcon === icon ? '#6366f1' : 'transparent'}`, borderRadius: '0.625rem', padding: '0.35rem', cursor: 'pointer', transition: 'all 0.1s', lineHeight: 1 }}
+                    title={icon}>
+                    {icon}
+                  </button>
+                ))}
+              </div>
+              {/* Preview badge */}
+              {playerName.trim() && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.75rem', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: '0.625rem', padding: '0.45rem 0.875rem', width: 'fit-content' }}>
+                  <span style={{ fontSize: '1.4rem' }}>{selectedIcon}</span>
+                  <span style={{ fontWeight: 700, color: '#e2e8f0' }}>{playerName.trim()}</span>
+                </div>
+              )}
+            </div>
             <div style={{ marginBottom: '1rem' }}>
               <label style={labelStyle}>Your Name</label>
               <input
@@ -324,7 +349,7 @@ function GameHomePageInner() {
             </div>
             {error && <div style={errorStyle}>{error}</div>}
             <button onClick={joinRoom} disabled={loading} style={primaryBtn}>
-              {loading ? '⏳ Joining...' : '🎮 Join Game'}
+              {loading ? '⏳ Joining...' : `${selectedIcon} Join Game`}
             </button>
           </div>
         </div>

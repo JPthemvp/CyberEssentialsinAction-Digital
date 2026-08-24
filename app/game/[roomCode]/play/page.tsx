@@ -15,6 +15,7 @@ import {
   type Difficulty,
 } from '@/lib/game-data';
 import { getSpeedTier, getQuestSpeedFeedback } from '@/lib/game-utils';
+import { parsePlayerName } from '@/lib/player-utils';
 import { ScenarioAnimation } from '@/components/ScenarioAnimation';
 import { QuestionExample } from '@/components/QuestionExample';
 
@@ -263,8 +264,7 @@ export default function PlayPage() {
       {/* Top bar */}
       <div style={{ background: 'rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '0.65rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-          <span style={{ width: 11, height: 11, borderRadius: '50%', background: player.avatar_color, display: 'inline-block' }} />
-          <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{player.player_name}</span>
+          {(() => { const { icon, name } = parsePlayerName(player.player_name); return (<><span style={{ fontSize: '1.3rem', lineHeight: 1 }}>{icon}</span><span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{name}</span></>); })()}
           {myTeam && <span style={{ background: `${myTeam.color}20`, color: myTeam.color, border: `1px solid ${myTeam.color}50`, borderRadius: '0.375rem', padding: '0.1rem 0.45rem', fontSize: '0.72rem', fontWeight: 700 }}>{myTeam.emoji} {myTeam.name}</span>}
           <span style={{ background: `${diffBadge[difficulty]}20`, color: diffBadge[difficulty], borderRadius: '0.375rem', padding: '0.1rem 0.45rem', fontSize: '0.7rem', fontWeight: 700 }}>{difficulty.toUpperCase()}</span>
         </div>
@@ -626,14 +626,16 @@ export default function PlayPage() {
                 const isMe = p.id === playerId;
                 const pTeamIdx = getTeamFromColor(p.avatar_color);
                 const pTeam = pTeamIdx >= 0 ? sectorTeams[pTeamIdx] : null;
+                const { icon: pIcon, name: pName } = parsePlayerName(p.player_name);
                 return (
                   <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: isMe ? 'rgba(99,102,241,0.2)' : i === 0 ? 'rgba(251,191,36,0.08)' : 'rgba(255,255,255,0.04)', borderRadius: '0.875rem', padding: '0.8rem 1.1rem', border: isMe ? '2px solid #6366f1' : `1px solid ${i === 0 ? 'rgba(251,191,36,0.25)' : 'transparent'}` }}>
-                    <span style={{ width: 28, textAlign: 'center', fontWeight: 800, fontSize: '0.95rem', color: i === 0 ? '#fbbf24' : '#64748b', flexShrink: 0 }}>#{i + 1}</span>
-                    <span style={{ fontWeight: isMe ? 800 : 600, flex: 1, fontSize: '0.95rem' }}>{p.player_name}{isMe ? ' (You)' : ''}</span>
+                    <span style={{ width: 24, textAlign: 'center', fontWeight: 800, fontSize: '0.9rem', color: i === 0 ? '#fbbf24' : '#64748b', flexShrink: 0 }}>#{i + 1}</span>
+                    <span style={{ fontSize: '1.3rem', flexShrink: 0, lineHeight: 1 }}>{pIcon}</span>
+                    <span style={{ fontWeight: isMe ? 800 : 600, flex: 1, fontSize: '0.9rem' }}>{pName}{isMe ? ' (You)' : ''}</span>
                     {pTeam && (
-                      <span style={{ background: `${pTeam.color}20`, color: pTeam.color, border: `1px solid ${pTeam.color}40`, borderRadius: '0.375rem', padding: '0.1rem 0.45rem', fontSize: '0.68rem', fontWeight: 700, flexShrink: 0 }}>{pTeam.emoji} {pTeam.name}</span>
+                      <span style={{ background: `${pTeam.color}20`, color: pTeam.color, border: `1px solid ${pTeam.color}40`, borderRadius: '0.375rem', padding: '0.1rem 0.4rem', fontSize: '0.65rem', fontWeight: 700, flexShrink: 0 }}>{pTeam.emoji} {pTeam.name}</span>
                     )}
-                    <span style={{ fontWeight: 800, fontSize: '1.05rem', color: i === 0 ? '#fbbf24' : '#e2e8f0', flexShrink: 0 }}>{p.score.toLocaleString()}</span>
+                    <span style={{ fontWeight: 800, fontSize: '1rem', color: i === 0 ? '#fbbf24' : '#e2e8f0', flexShrink: 0 }}>{p.score.toLocaleString()}</span>
                   </div>
                 );
               })}

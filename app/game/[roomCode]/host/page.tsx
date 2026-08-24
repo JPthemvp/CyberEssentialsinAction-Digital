@@ -15,6 +15,7 @@ import {
   type QuestScenario, type Difficulty,
 } from '@/lib/game-data';
 import { getSpeedTier } from '@/lib/game-utils';
+import { parsePlayerName } from '@/lib/player-utils';
 import { QuestionExample, hasExample } from '@/components/QuestionExample';
 import { ScenarioAnimation } from '@/components/ScenarioAnimation';
 
@@ -438,6 +439,15 @@ ${(qs.answers || []).sort((a, b) => (a.response_time_ms || 99999) - (b.response_
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%)', color: '#fff', fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
 
+      {/* End Game button — fixed bottom-right, always visible while game is live */}
+      {room.status !== 'ended' && (
+        <button onClick={() => updateRoom({ status: 'ended' })}
+          style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', zIndex: 100, background: 'rgba(239,68,68,0.15)', border: '2px solid rgba(239,68,68,0.4)', color: '#f87171', borderRadius: '0.75rem', padding: '0.6rem 1.25rem', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer', backdropFilter: 'blur(8px)', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}
+          onMouseOver={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,0.35)'; }}
+          onMouseOut={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,0.15)'; }}>
+          🏁 End Game
+        </button>
+      )}
 
       {/* Play as New confirmation modal */}
       {playAsNewPending !== null && (
@@ -665,7 +675,8 @@ ${(qs.answers || []).sort((a, b) => (a.response_time_ms || 99999) - (b.response_
                                   return (
                                     <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', opacity: isActive ? 1 : 0.5 }}>
                                       <span style={{ width: 7, height: 7, borderRadius: '50%', background: isActive ? '#22c55e' : '#475569', flexShrink: 0 }} />
-                                      <span style={{ fontWeight: 600, fontSize: '0.85rem', flex: 1 }}>{p.player_name}</span>
+                                      <span style={{ fontSize: '1rem', lineHeight: 1, flexShrink: 0 }}>{parsePlayerName(p.player_name).icon}</span>
+                                      <span style={{ fontWeight: 600, fontSize: '0.85rem', flex: 1 }}>{parsePlayerName(p.player_name).name}</span>
                                       <span title={role.label} style={{ fontSize: '0.9rem' }}>{role.icon}</span>
                                     </div>
                                   );
@@ -912,12 +923,13 @@ ${(qs.answers || []).sort((a, b) => (a.response_time_ms || 99999) - (b.response_
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxWidth: 500, margin: '0 auto 2rem' }}>
               {[...nonHostPlayers].sort((a, b) => b.score - a.score).slice(0, 10).map((p, i) => {
                 const ti = playerTeam(p);
+                const { icon: pIcon, name: pName } = parsePlayerName(p.player_name);
                 return (
                   <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: i === 0 ? 'rgba(251,191,36,0.15)' : 'rgba(255,255,255,0.04)', borderRadius: '0.75rem', padding: '0.875rem 1.25rem', border: `1px solid ${i === 0 ? 'rgba(251,191,36,0.3)' : 'transparent'}` }}>
-                    <span style={{ fontSize: '1.4rem', width: 34 }}>{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}</span>
-                    <span style={{ fontSize: '0.9rem' }} title={ti >= 0 ? sectorTeams[ti]?.name : 'No team'}>{ti >= 0 ? sectorTeams[ti]?.emoji : '⬜'}</span>
-                    <span style={{ width: 12, height: 12, borderRadius: '50%', background: p.avatar_color, display: 'inline-block' }} />
-                    <span style={{ fontWeight: 700, flex: 1 }}>{p.player_name}</span>
+                    <span style={{ fontWeight: 800, width: 28, textAlign: 'center', color: i === 0 ? '#fbbf24' : '#64748b', fontSize: '0.9rem' }}>#{i + 1}</span>
+                    <span style={{ fontSize: '1.3rem', lineHeight: 1 }}>{pIcon}</span>
+                    <span style={{ fontSize: '0.9rem' }} title={ti >= 0 ? sectorTeams[ti]?.name : 'No team'}>{ti >= 0 ? sectorTeams[ti]?.emoji : ''}</span>
+                    <span style={{ fontWeight: 700, flex: 1 }}>{pName}</span>
                     <span style={{ fontWeight: 800, fontSize: '1.25rem', color: i === 0 ? '#fbbf24' : '#e2e8f0' }}>{p.score.toLocaleString()}</span>
                   </div>
                 );
@@ -937,14 +949,19 @@ ${(qs.answers || []).sort((a, b) => (a.response_time_ms || 99999) - (b.response_
             <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎉</div>
             <h2 style={{ fontSize: '2rem', marginBottom: '2rem' }}>Game Over — Final Standings</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxWidth: 500, margin: '0 auto 2rem' }}>
-              {[...nonHostPlayers].sort((a, b) => b.score - a.score).map((p, i) => (
-                <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '0.75rem', padding: '0.875rem 1.25rem' }}>
-                  <span style={{ width: 28, textAlign: 'center', fontWeight: 700 }}>#{i + 1}</span>
-                  <span style={{ width: 12, height: 12, borderRadius: '50%', background: p.avatar_color, display: 'inline-block' }} />
-                  <span style={{ fontWeight: 700, flex: 1 }}>{p.player_name}</span>
-                  <span style={{ fontWeight: 800, color: '#fbbf24' }}>{p.score.toLocaleString()}</span>
-                </div>
-              ))}
+              {[...nonHostPlayers].sort((a, b) => b.score - a.score).map((p, i) => {
+                const { icon: pIcon, name: pName } = parsePlayerName(p.player_name);
+                const ti = playerTeam(p);
+                return (
+                  <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'rgba(255,255,255,0.05)', borderRadius: '0.75rem', padding: '0.875rem 1.25rem' }}>
+                    <span style={{ width: 24, textAlign: 'center', fontWeight: 700, color: i === 0 ? '#fbbf24' : '#64748b', fontSize: '0.9rem' }}>#{i + 1}</span>
+                    <span style={{ fontSize: '1.3rem', lineHeight: 1 }}>{pIcon}</span>
+                    {ti >= 0 && <span style={{ fontSize: '0.9rem' }}>{sectorTeams[ti]?.emoji}</span>}
+                    <span style={{ fontWeight: 700, flex: 1 }}>{pName}</span>
+                    <span style={{ fontWeight: 800, color: '#fbbf24' }}>{p.score.toLocaleString()}</span>
+                  </div>
+                );
+              })}
             </div>
             <div style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: '1rem', padding: '1.25rem 1.5rem', marginBottom: '1.5rem', textAlign: 'left' }}>
               <div style={{ color: '#a5b4fc', fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.75rem' }}>📋 Generate Session Report</div>
