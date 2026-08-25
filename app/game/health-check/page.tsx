@@ -4,7 +4,6 @@ import { useState, useMemo } from 'react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Step = 'profile' | 'questions' | 'results';
-type Ans  = 'yes' | 'partial' | 'no' | null;
 interface Profile {
   sector: string; years: string; employees: string; turnover: string;
   uen: string; companyName: string; psgRef: string;
@@ -12,108 +11,195 @@ interface Profile {
 
 // ─── CISO-as-a-Service Providers (CSA listing, ranked by track record) ───────
 const CISO_PROVIDERS = [
-  { rank:1,  name:'CyberSafe Pte Ltd',                     contact:'Dave Gurbani',     email:'dave@cybersafe.sg',                     phone:'8725 9789' },
-  { rank:2,  name:'RSM SG Risk Advisory Pte Ltd',          contact:'Kendrick Choo',    email:'kendrickchooxh@rsmsingapore.sg',         phone:'9186 0900' },
-  { rank:3,  name:'Contfinity Pte Ltd',                    contact:'Chan Kai Chung Alex', email:'alex.chan@contfinity.com',            phone:'9062 3231' },
-  { rank:4,  name:'ATET Pte Ltd',                          contact:'Daniel Goh',       email:'daniel@atetsecurity.com',               phone:'9832 3308' },
-  { rank:5,  name:'Momentum Z Pte Ltd',                    contact:'Shane Chiang',     email:'shane@mzt.one',                         phone:'9681 2888' },
-  { rank:6,  name:'Nucleo Consulting Pte Ltd',             contact:'Sandra Yeow',      email:'sales@nucleoconsulting.com',            phone:'6911 0533' },
-  { rank:7,  name:'Genesis Networks Pte Ltd',              contact:'James Tan',        email:'yongsiang.tan@gen-net.com.sg',          phone:'9684 0706' },
-  { rank:8,  name:'Evvo Labs Pte Ltd',                     contact:'Vince Chew',       email:'vince.chew@evvolabs.com',               phone:'9668 6003' },
-  { rank:9,  name:'Acuutech Pte Ltd',                      contact:'Hitan Mehta',      email:'cisoaas@acuutech.com',                  phone:'6978 6089' },
-  { rank:10, name:'Nestor Consulting Pte Ltd',             contact:'Vineet Sinha',     email:'vineet.sinha@nestor.sg',                phone:'8661 9550' },
-  { rank:11, name:'Imagenz Pte Ltd',                       contact:'Ang Soon Huat',    email:'ash@imagenz.net',                       phone:'9108 7809' },
-  { rank:12, name:'Insyghts Security Pte Ltd',             contact:'Ng Ngee Hau',      email:'alex.ng@insyghts.com.sg',              phone:'8749 4825' },
-  { rank:13, name:'Sin-Yun Pte Ltd',                       contact:'Luke Ku',          email:'luke@sinyun.sg',                        phone:'9025 1966' },
-  { rank:14, name:'Rayn Secure Pte Ltd',                   contact:'Richard Pereira',  email:'richard.pereira@raynsecure.com',        phone:'9633 2806' },
-  { rank:15, name:'Greenwich Management Consultancy Pte Ltd', contact:'Michelle Chew', email:'michelle@greenwich.com.sg',             phone:'9876 6828' },
-  { rank:16, name:'Sekuro Operations Pte Ltd',             contact:'Belinda Liau',     email:'sgsales@sekuro.io',                     phone:'9190 7231' },
-  { rank:17, name:'softScheck Singapore Pte Ltd',          contact:'Tsai Chern Haw',   email:'chernhaw.tsai@softscheck-apac.com',     phone:'9831 6333' },
-  { rank:18, name:'Viperlink Pte Ltd',                     contact:'Lee Kok Onn',      email:'kolee@viperlink.com.sg',                phone:'9742 7774' },
-  { rank:19, name:'Jwrtee Pte Ltd',                        contact:'Goh Choon Hua',    email:'gohch@jwrtee.com',                      phone:'8755 5977' },
-  { rank:20, name:'M1 Limited',                            contact:'Tan Ke Han',       email:'tankha@m1.com.sg',                      phone:'9114 0614' },
-  { rank:21, name:'TRS Forensics Pte Ltd',                 contact:'Tan Swee Wan',     email:'tansweewan@trsforensics.com',           phone:'9755 7010' },
-  { rank:22, name:'Acclime Risk Advisory Pte Ltd',         contact:'Chia Shu Siang',   email:'shusiang.chia@acclime.com',             phone:'6856 9908' },
-  { rank:23, name:'PDataCare Consultancy Pte Ltd',         contact:'Gn Chiang Soon',   email:'chiangsoon@pdatacare.com',              phone:'9616 8660' },
-  { rank:24, name:'Nex CorporateIT Pte Ltd',               contact:'Max Goh',          email:'max.goh@nexcorporateit.com',            phone:'9139 9768' },
-  { rank:25, name:'NY Risk Consulting Pte Ltd',            contact:'Gary Ng',          email:'garyng@nyrisk.sg',                      phone:'9679 1267' },
-  { rank:26, name:'Lloyd McGill Pte Ltd',                  contact:'Jimmy Soon',       email:'jimmy.soon@lloydmcgill.com',            phone:'9631 1958' },
-  { rank:27, name:'KPMG Services Pte Ltd',                 contact:'Eddie Toh',        email:'eddietoh@kpmg.com.sg',                  phone:'8112 0981' },
-  { rank:28, name:'NTC Integration Pte Ltd',               contact:'Wilson Ng',        email:'wilson@ntc.com.sg',                     phone:'9455 6192' },
+  { rank:1,  name:'CyberSafe Pte Ltd',                        contact:'Dave Gurbani',        email:'dave@cybersafe.sg',                     phone:'8725 9789' },
+  { rank:2,  name:'RSM SG Risk Advisory Pte Ltd',             contact:'Kendrick Choo',        email:'kendrickchooxh@rsmsingapore.sg',         phone:'9186 0900' },
+  { rank:3,  name:'Contfinity Pte Ltd',                       contact:'Chan Kai Chung Alex',  email:'alex.chan@contfinity.com',               phone:'9062 3231' },
+  { rank:4,  name:'ATET Pte Ltd',                             contact:'Daniel Goh',           email:'daniel@atetsecurity.com',               phone:'9832 3308' },
+  { rank:5,  name:'Momentum Z Pte Ltd',                       contact:'Shane Chiang',         email:'shane@mzt.one',                         phone:'9681 2888' },
+  { rank:6,  name:'Nucleo Consulting Pte Ltd',                contact:'Sandra Yeow',          email:'sales@nucleoconsulting.com',             phone:'6911 0533' },
+  { rank:7,  name:'Genesis Networks Pte Ltd',                 contact:'James Tan',            email:'yongsiang.tan@gen-net.com.sg',           phone:'9684 0706' },
+  { rank:8,  name:'Evvo Labs Pte Ltd',                        contact:'Vince Chew',           email:'vince.chew@evvolabs.com',               phone:'9668 6003' },
+  { rank:9,  name:'Acuutech Pte Ltd',                         contact:'Hitan Mehta',          email:'cisoaas@acuutech.com',                  phone:'6978 6089' },
+  { rank:10, name:'Nestor Consulting Pte Ltd',                contact:'Vineet Sinha',         email:'vineet.sinha@nestor.sg',                phone:'8661 9550' },
+  { rank:11, name:'Imagenz Pte Ltd',                          contact:'Ang Soon Huat',        email:'ash@imagenz.net',                       phone:'9108 7809' },
+  { rank:12, name:'Insyghts Security Pte Ltd',                contact:'Ng Ngee Hau',          email:'alex.ng@insyghts.com.sg',               phone:'8749 4825' },
+  { rank:13, name:'Sin-Yun Pte Ltd',                          contact:'Luke Ku',              email:'luke@sinyun.sg',                        phone:'9025 1966' },
+  { rank:14, name:'Rayn Secure Pte Ltd',                      contact:'Richard Pereira',      email:'richard.pereira@raynsecure.com',        phone:'9633 2806' },
+  { rank:15, name:'Greenwich Management Consultancy Pte Ltd', contact:'Michelle Chew',        email:'michelle@greenwich.com.sg',             phone:'9876 6828' },
+  { rank:16, name:'Sekuro Operations Pte Ltd',                contact:'Belinda Liau',         email:'sgsales@sekuro.io',                     phone:'9190 7231' },
+  { rank:17, name:'softScheck Singapore Pte Ltd',             contact:'Tsai Chern Haw',       email:'chernhaw.tsai@softscheck-apac.com',     phone:'9831 6333' },
+  { rank:18, name:'Viperlink Pte Ltd',                        contact:'Lee Kok Onn',          email:'kolee@viperlink.com.sg',                phone:'9742 7774' },
+  { rank:19, name:'Jwrtee Pte Ltd',                           contact:'Goh Choon Hua',        email:'gohch@jwrtee.com',                      phone:'8755 5977' },
+  { rank:20, name:'M1 Limited',                               contact:'Tan Ke Han',           email:'tankha@m1.com.sg',                      phone:'9114 0614' },
+  { rank:21, name:'TRS Forensics Pte Ltd',                    contact:'Tan Swee Wan',         email:'tansweewan@trsforensics.com',           phone:'9755 7010' },
+  { rank:22, name:'Acclime Risk Advisory Pte Ltd',            contact:'Chia Shu Siang',       email:'shusiang.chia@acclime.com',             phone:'6856 9908' },
+  { rank:23, name:'PDataCare Consultancy Pte Ltd',            contact:'Gn Chiang Soon',       email:'chiangsoon@pdatacare.com',              phone:'9616 8660' },
+  { rank:24, name:'Nex CorporateIT Pte Ltd',                  contact:'Max Goh',              email:'max.goh@nexcorporateit.com',            phone:'9139 9768' },
+  { rank:25, name:'NY Risk Consulting Pte Ltd',               contact:'Gary Ng',              email:'garyng@nyrisk.sg',                      phone:'9679 1267' },
+
+  { rank:27, name:'KPMG Services Pte Ltd',                    contact:'Eddie Toh',            email:'eddietoh@kpmg.com.sg',                  phone:'8112 0981' },
+  { rank:28, name:'NTC Integration Pte Ltd',                  contact:'Wilson Ng',            email:'wilson@ntc.com.sg',                     phone:'9455 6192' },
 ];
 
-// ─── 9 Cyber Essentials Measures ─────────────────────────────────────────────
-const MEASURES = [
-  { id:'people',    label:'People & Training',     icon:'👥', color:'#6366f1', natAvg:44,
-    desc:"Staff awareness, training, and human-layer defences — social engineering is the #2 top cybersecurity incident in Singapore organisations (CSA's Cybersecurity Health Report 2023)" },
-  { id:'assets',    label:'Asset Management',      icon:'📦', color:'#0891b2', natAvg:57,
-    desc:'Knowing and controlling your hardware, software, and data assets' },
-  { id:'secure',    label:'Secure Configuration',  icon:'🔒', color:'#7c3aed', natAvg:51,
-    desc:'Hardening systems and removing unnecessary features' },
-  { id:'patch',     label:'Patch Management',      icon:'🔄', color:'#059669', natAvg:63,
-    desc:'Keeping software and firmware up to date' },
-  { id:'access',    label:'Access Control',        icon:'🗝️', color:'#d97706', natAvg:54,
-    desc:'Controlling who can access systems, data, and admin rights' },
-  { id:'malware',   label:'Malware Protection',    icon:'🛡️', color:'#dc2626', natAvg:68,
-    desc:'Defending against malicious software across all endpoints' },
-  { id:'network',   label:'Network Security',      icon:'🌐', color:'#0e7490', natAvg:48,
-    desc:'Firewalls, segmentation, and securing network traffic' },
-  { id:'data',      label:'Data Protection',       icon:'💾', color:'#7c3aed', natAvg:52,
-    desc:'Backup, encryption, and data lifecycle management' },
-  { id:'incident',  label:'Incident Response',     icon:'🚨', color:'#be123c', natAvg:40,
-    desc:'Detecting, reporting, and recovering from cyber incidents' },
+// ─── 9 Measures with exact checkbox questions from CSA Excel ─────────────────
+interface Measure {
+  id: string; label: string; shortLabel: string; icon: string; color: string;
+  group: string; natAvg: number;
+  question: string;
+  options: string[];  // last item is always "None of the above"
+}
+
+const MEASURES: Measure[] = [
+  {
+    id: 'people', label: 'People', shortLabel: 'People', icon: '👥', color: '#6366f1',
+    group: 'Assets', natAvg: 44,
+    question: 'Q1: Has your organisation implemented the following measures to equip your employees to be the first line of defence?',
+    options: [
+      'Cybersecurity awareness and training for all employees',
+      'Cybersecurity practices and guidelines for daily operations',
+      'None of the above',
+    ],
+  },
+  {
+    id: 'hardware', label: 'Hardware and Software', shortLabel: 'Hardware & SW', icon: '💻', color: '#0891b2',
+    group: 'Assets', natAvg: 51,
+    question: 'Q2: Has your organisation implemented the following measures to know what hardware and software your organisation has and protect them?',
+    options: [
+      'Up-to-date inventory of all hardware and software including those on cloud instances (e.g. software and operating system used)',
+      'Unauthorised and End of Service/Life (EOS/EOL) assets are replaced; and if EOS/EOL assets are in use before replacement, they are assessed and monitored for risks, and approved by senior management',
+      'Process to on-board new hardware and software into the organisation',
+      'Date of authorisation of the hardware and software are recorded in the inventory list, and those without approval dates are removed',
+      'All confidential information is deleted before any hardware asset is disposed',
+      'None of the above',
+    ],
+  },
+  {
+    id: 'data', label: 'Data', shortLabel: 'Data', icon: '🗄️', color: '#7c3aed',
+    group: 'Assets', natAvg: 48,
+    question: 'Q3: Has your organisation implemented the following measures to know what data your organisation has and secure them?',
+    options: [
+      'Up-to-date inventory of business-critical data',
+      'Process to protect your organisation business-critical data, e.g. password protection of document, encryption of personal data stored',
+      'Prevent employees from leaking confidential/sensitive data outside the organisation e.g. disabling USB ports',
+      'Paper-based/hard copy media containing confidential/sensitive data are securely shredded',
+      'None of the above',
+    ],
+  },
+  {
+    id: 'malware', label: 'Virus and Malware Protection', shortLabel: 'Virus & Malware', icon: '🛡️', color: '#dc2626',
+    group: 'Secure/Protect', natAvg: 63,
+    question: 'Q4: Has your organisation implemented the following measures to protect systems and devices from malicious software like viruses and malwares?',
+    options: [
+      'Anti-malware solutions are installed and used in endpoints (i.e. laptop, mobile devices, servers)',
+      'Virus and malware scans are performed to detect possible cyberattacks',
+      'Anti-malware solutions are updated automatically to detect new malware (e.g. signature files)',
+      'Anti-malware solutions are configured to automatically scan the files upon access, including files downloaded from internet/emails/USB drive',
+      'Firewalls are deployed to protect networks, systems and endpoints, and network perimeter firewalls are configured to analyse and accept only authorised network traffic',
+      'Employees use only authorised software from official or trusted sources',
+      'Employees are aware of the use of trusted network connections for accessing organisation\'s data or business email, e.g. through corporate network or VPN',
+      'Employees are aware of the need to report any suspicious email/attachment or cybersecurity incidents to the IT team/senior management immediately',
+      'None of the above',
+    ],
+  },
+  {
+    id: 'access', label: 'Access Control', shortLabel: 'Access Control', icon: '🗝️', color: '#d97706',
+    group: 'Secure/Protect', natAvg: 52,
+    question: 'Q5: Has your organisation implemented the following measures to restrict access to your data and services?',
+    options: [
+      'Manage and maintain the inventory of accounts, including users, administrators, third parties and service accounts',
+      'Approval process to grant and revoke access',
+      'Employees can access only the information and systems required for their job roles',
+      'Accounts that no longer require the access rights or have exceeded the requested date for access, as well as shared/duplicate/obsolete/invalid accounts are disabled or removed',
+      'Administrator accounts are only accessed to perform administrative functions with approval from management',
+      'Access for third parties or contractors are managed and restricted to only information/systems required for their job role, and removed when they no longer require the access',
+      'Third parties or contractors working with sensitive information are required to sign an NDA (non-disclosure agreement)',
+      'Physical access control is enforced to allow only authorised personnel to access the organisation\'s IT assets/environment',
+      'All default passwords are changed and replaced with strong passphrases',
+      'Accounts that have multiple failed login attempts are disabled/locked out',
+      'Account passwords are changed in the event of any suspected compromise',
+      'None of the above',
+    ],
+  },
+  {
+    id: 'secure', label: 'Secure Configuration', shortLabel: 'Secure Config', icon: '⚙️', color: '#059669',
+    group: 'Secure/Protect', natAvg: 49,
+    question: 'Q6: Has your organisation implemented the following measures on secure settings for all hardware and software assets?',
+    options: [
+      'Security configurations are enforced for all assets using industry recommendations and standards (e.g. CIS benchmarks)',
+      'Default, weak or insecure configurations are avoided or upgraded, e.g. changing default password, using HTTPS instead of HTTP, WPA2/WPA3 instead of WEP',
+      'Features, services or applications that are not in use are disabled or removed, e.g. file sharing services, FTP',
+      'Features, such as auto-connect to open networks and auto-run of non-essential programs are disabled',
+      'None of the above',
+    ],
+  },
+  {
+    id: 'updates', label: 'Software Updates', shortLabel: 'SW Updates', icon: '🔄', color: '#0e7490',
+    group: 'Update', natAvg: 68,
+    question: 'Q7: Has your organisation implemented the following measures on software update for systems and devices?',
+    options: [
+      'Critical or important updates for operating systems and applications (e.g. security patches) are prioritised and applied as soon as possible',
+      'None of the above',
+    ],
+  },
+  {
+    id: 'backup', label: 'Backup', shortLabel: 'Backup', icon: '💾', color: '#16a34a',
+    group: 'Backup', natAvg: 54,
+    question: 'Q8: Has your organisation implemented the following measures to back up essential data and store them offline:',
+    options: [
+      'Business-critical systems and those containing essential business information (e.g. financial and business transactions) are identified and backed up regularly, including data stored in the cloud environment',
+      'Backups are protected from unauthorised access',
+      'Backups are stored separately (i.e. offline) from the operating environment',
+      'Longer term backups (e.g. monthly backups) are stored offline securely at an alternative location',
+      'None of the above',
+    ],
+  },
+  {
+    id: 'incident', label: 'Incident Response', shortLabel: 'Incident Response', icon: '🚨', color: '#be123c',
+    group: 'Respond', natAvg: 38,
+    question: 'Q9: Has your organisation put in place an incident response management to detect, respond to, and recover from cybersecurity incidents?',
+    options: [
+      'Up-to-date incident response plan that contains clear roles and responsibilities, procedures to detect/respond/recover from incidents, and communication plan and timeline to escalate and report to stakeholders (e.g. regulators, customers and management)',
+      'Employees who have access to the organisation\'s IT assets/environment are aware of the incident response plan',
+      'None of the above',
+    ],
+  },
 ];
 
-// ─── Assessment Questions (3 per measure) ────────────────────────────────────
-const QUESTIONS: Record<string, { q: string; hint: string }[]> = {
-  people: [
-    { q:'Do all staff complete cybersecurity awareness training at least once a year?', hint:'Covers phishing, password hygiene, social engineering, and safe browsing.' },
-    { q:'Do employees know how to recognise and report suspicious emails or links?', hint:'There is a clear reporting channel (e.g. helpdesk, email alias) they actively use.' },
-    { q:'Are new employees given security briefings before accessing company systems?', hint:'Onboarding includes acceptable-use policy sign-off and security responsibilities.' },
-  ],
-  assets: [
-    { q:'Do you maintain an up-to-date inventory of all devices (laptops, phones, servers)?', hint:'Includes personally-owned devices that access company data.' },
-    { q:'Do you track all software applications and licences in use across the organisation?', hint:'Unauthorised or shadow-IT applications are identified and reviewed.' },
-    { q:'Do you know where all sensitive/personal data is stored and who has access to it?', hint:'Data mapping or a simple register exists.' },
-  ],
-  secure: [
-    { q:'Are default passwords changed on all devices, routers, and systems before deployment?', hint:'No device uses vendor default credentials in production.' },
-    { q:'Are unnecessary services, ports, and applications disabled or removed?', hint:'Systems follow a hardening checklist or benchmark (e.g. CIS).' },
-    { q:'Do you review and update security configurations at least annually?', hint:'Configuration drift is caught through periodic reviews or automated scanning.' },
-  ],
-  patch: [
-    { q:'Are critical security patches applied to operating systems within 14 days of release?', hint:'Patch windows are defined and monitored.' },
-    { q:'Are third-party applications (browsers, Office, Adobe, etc.) kept up to date?', hint:'Auto-update is enabled or a patch management tool is used.' },
-    { q:'Are end-of-life or unsupported software/hardware tracked and replaced promptly?', hint:'A list of EOL assets exists and a migration plan is in place.' },
-  ],
-  access: [
-    { q:'Is multi-factor authentication (MFA) enabled for all remote access and email accounts?', hint:'Includes VPN, cloud email, Microsoft 365, Google Workspace, etc.' },
-    { q:'Do employees only have access to the systems and data needed for their role (least privilege)?', hint:'Admin rights are not given by default; they are reviewed regularly.' },
-    { q:'Are account access reviews conducted when staff change roles or leave the organisation?', hint:'Departing employees have access revoked on or before their last day.' },
-  ],
-  malware: [
-    { q:'Is endpoint protection (antivirus/EDR) installed and actively updated on all devices?', hint:'Covers laptops, desktops, and servers — not just some of them.' },
-    { q:'Are removable media (USB drives) controlled or restricted?', hint:'Policy or technical controls prevent unauthorised USB use.' },
-    { q:'Do you scan email attachments and downloads for malware before they reach users?', hint:'Gateway-level scanning or cloud email filtering is in place.' },
-  ],
-  network: [
-    { q:'Is a firewall in place between the internet and your internal network?', hint:'Includes cloud environments — security groups / ACLs count.' },
-    { q:'Is your Wi-Fi network secured with WPA2 or WPA3 and a strong passphrase?', hint:'Guest Wi-Fi is separated from the corporate network.' },
-    { q:'Do you monitor network traffic for unusual or suspicious activity?', hint:'Logs are collected; alerts exist for anomalous connections or data volumes.' },
-  ],
-  data: [
-    { q:'Are critical business data and systems backed up regularly (at least daily)?', hint:'Backups are automated and include all critical data.' },
-    { q:'Are backups stored offline or in a separate environment (e.g. cloud, offsite)?', hint:'Ransomware cannot reach and encrypt the backup copies.' },
-    { q:'Are backup restores tested at least once a year?', hint:'A restore drill has confirmed data can actually be recovered.' },
-  ],
-  incident: [
-    { q:'Does your organisation have a documented incident response plan?', hint:'Contacts, escalation steps, and communication templates exist in writing.' },
-    { q:'Do employees know who to contact and what to do if a cyber incident occurs?', hint:'There is a defined first-responder process and it has been communicated to staff.' },
-    { q:'Have you tested or rehearsed your incident response plan in the past 12 months?', hint:'A tabletop exercise, drill, or simulation has been conducted.' },
-  ],
-};
+// Groups for results display
+const GROUPS = [
+  { id:'Assets',        label:'Assets',         icon:'📦', measures:['people','hardware','data'] },
+  { id:'Secure/Protect',label:'Secure / Protect',icon:'🔒', measures:['malware','access','secure'] },
+  { id:'Update',        label:'Update',          icon:'🔄', measures:['updates'] },
+  { id:'Backup',        label:'Backup',          icon:'💾', measures:['backup'] },
+  { id:'Respond',       label:'Respond',         icon:'🚨', measures:['incident'] },
+];
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Scoring helpers ──────────────────────────────────────────────────────────
+function measureScore(m: Measure, checked: Set<number>): number {
+  const noneIdx = m.options.length - 1;
+  if (checked.has(noneIdx) || checked.size === 0) return 0;
+  const scored = [...checked].filter(i => i !== noneIdx).length;
+  const total = m.options.length - 1; // exclude "None of the above"
+  return Math.round((scored / total) * 100);
+}
+
+function overallScore(scores: Record<string, number>): number {
+  const vals = MEASURES.map(m => scores[m.id] ?? 0);
+  return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
+}
+
+function tier(score: number): { label: string; color: string; desc: string } {
+  if (score >= 70) return { label: 'Cyber Champion', color: '#16a34a', desc: 'Your organisation has strong cybersecurity foundations. Keep maintaining and improving these practices.' };
+  if (score >= 40) return { label: 'Cyber Intermediate', color: '#d97706', desc: 'You have made a good start on cybersecurity. There are still areas to improve to better protect your business.' };
+  return { label: 'Cyber Starter', color: '#dc2626', desc: 'You have just started your cybersecurity journey. This puts your business at risk of cyber attacks. Explore our recommendations to better protect your business.' };
+}
+
+function scoreColor(pct: number) {
+  if (pct >= 70) return '#16a34a';
+  if (pct >= 40) return '#d97706';
+  return '#dc2626';
+}
+
 function seededRandom(seed: string): () => number {
   let h = 0;
   for (let i = 0; i < seed.length; i++) h = Math.imul(31, h) + seed.charCodeAt(i) | 0;
@@ -121,41 +207,23 @@ function seededRandom(seed: string): () => number {
 }
 
 function pickProviders(employees: string, seed: string) {
-  const rand = seededRandom(seed);
-  // Larger orgs → prefer higher-ranked providers
-  const pool = employees === '200+' ? CISO_PROVIDERS.slice(0, 10)
-             : employees === '50-199' ? CISO_PROVIDERS.slice(0, 18)
+  const rand = seededRandom(seed || 'default');
+  const pool = employees === '200 or more' ? CISO_PROVIDERS.slice(0, 10)
+             : employees === '50 – 199'    ? CISO_PROVIDERS.slice(0, 18)
              : CISO_PROVIDERS;
-  const shuffled = [...pool].sort(() => rand() - 0.5);
-  return shuffled.slice(0, 3);
-}
-
-function scoreColor(pct: number) {
-  if (pct >= 70) return '#16a34a';
-  if (pct >= 50) return '#d97706';
-  return '#dc2626';
-}
-function scoreLabel(pct: number) {
-  if (pct >= 80) return 'Strong';
-  if (pct >= 60) return 'Progressing';
-  if (pct >= 40) return 'Developing';
-  return 'At Risk';
+  return [...pool].sort(() => rand() - 0.5).slice(0, 3);
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function HealthCheckPage() {
-  const [step, setStep]     = useState<Step>('profile');
-  const [profile, setProfile] = useState<Profile>({
-    sector:'', years:'', employees:'', turnover:'',
-    uen:'', companyName:'', psgRef:'',
-  });
-  const [answers, setAnswers] = useState<Record<string, Ans[]>>({});
+  const [step, setStep]       = useState<Step>('profile');
+  const [profile, setProfile] = useState<Profile>({ sector:'', years:'', employees:'', turnover:'', uen:'', companyName:'', psgRef:'' });
+  const [answers, setAnswers] = useState<Record<string, Set<number>>>({});
   const [errors, setErrors]   = useState<string[]>([]);
 
-  // Initialise blank answers for all questions
   function initAnswers() {
-    const a: Record<string, Ans[]> = {};
-    MEASURES.forEach(m => { a[m.id] = QUESTIONS[m.id].map(() => null); });
+    const a: Record<string, Set<number>> = {};
+    MEASURES.forEach(m => { a[m.id] = new Set(); });
     setAnswers(a);
   }
 
@@ -169,204 +237,126 @@ export default function HealthCheckPage() {
     return e.length === 0;
   }
 
-  function handleStartAssessment() {
-    if (!validateProfile()) return;
-    initAnswers();
-    setStep('questions');
-    window.scrollTo(0, 0);
-  }
-
-  function setAns(measureId: string, qIdx: number, val: Ans) {
+  function toggle(measureId: string, optIdx: number, isNone: boolean) {
     setAnswers(prev => {
-      const copy = { ...prev };
-      copy[measureId] = [...(copy[measureId] || [])];
-      copy[measureId][qIdx] = val;
-      return copy;
+      const cur = new Set(prev[measureId] ?? []);
+      const noneIdx = MEASURES.find(m => m.id === measureId)!.options.length - 1;
+      if (isNone) {
+        // selecting "None" clears everything and toggles None
+        if (cur.has(noneIdx)) { cur.delete(noneIdx); } else { cur.clear(); cur.add(noneIdx); }
+      } else {
+        // selecting any option clears None
+        cur.delete(noneIdx);
+        if (cur.has(optIdx)) { cur.delete(optIdx); } else { cur.add(optIdx); }
+      }
+      return { ...prev, [measureId]: cur };
     });
   }
+
+  const scores = useMemo(() => {
+    const s: Record<string, number> = {};
+    MEASURES.forEach(m => { s[m.id] = measureScore(m, answers[m.id] ?? new Set()); });
+    return s;
+  }, [answers]);
 
   const totalAnswered = useMemo(() => {
-    return MEASURES.reduce((sum, m) => sum + (answers[m.id]?.filter(Boolean).length || 0), 0);
+    return MEASURES.filter(m => (answers[m.id]?.size ?? 0) > 0).length;
   }, [answers]);
-  const totalQuestions = MEASURES.length * 3;
 
-  function calcResults() {
-    const perMeasure: Record<string, number> = {};
-    let totalPoints = 0, maxPoints = 0;
-    MEASURES.forEach(m => {
-      const ans = answers[m.id] || [];
-      const pts = ans.reduce((s, a) => s + (a === 'yes' ? 2 : a === 'partial' ? 1 : 0), 0);
-      const max = QUESTIONS[m.id].length * 2;
-      perMeasure[m.id] = Math.round((pts / max) * 100);
-      totalPoints += pts;
-      maxPoints   += max;
-    });
-    const overall = Math.round((totalPoints / maxPoints) * 100);
-    return { overall, perMeasure };
-  }
+  // ── Styles ─────────────────────────────────────────────────────────────────
+  const base: React.CSSProperties = { minHeight:'100vh', background:'#f8fafc', color:'#0f172a', fontFamily:"'Segoe UI',system-ui,sans-serif" };
+  const inputSt: React.CSSProperties = { width:'100%', padding:'0.7rem 0.875rem', borderRadius:'0.5rem', border:'1.5px solid #e2e8f0', background:'#fff', color:'#0f172a', fontSize:'0.95rem', outline:'none', boxSizing:'border-box' };
+  const labelSt: React.CSSProperties = { display:'block', fontWeight:700, fontSize:'0.82rem', color:'#475569', textTransform:'uppercase', letterSpacing:'0.04em', marginBottom:'0.35rem' };
+  const cardSt:  React.CSSProperties = { background:'#fff', borderRadius:'1rem', border:'1px solid #e2e8f0', padding:'1.5rem', boxShadow:'0 1px 4px rgba(0,0,0,0.06)' };
 
-  function handleViewResults() {
-    setStep('results');
-    window.scrollTo(0, 0);
-  }
-
-  // ── Render ──────────────────────────────────────────────────────────────────
-  const base: React.CSSProperties = {
-    minHeight:'100vh', background:'#f8fafc',
-    color:'#0f172a', fontFamily:"'Segoe UI', system-ui, sans-serif",
-  };
-
-  const inputSt: React.CSSProperties = {
-    width:'100%', padding:'0.7rem 0.875rem', borderRadius:'0.5rem',
-    border:'1.5px solid #e2e8f0', background:'#fff', color:'#0f172a',
-    fontSize:'0.95rem', outline:'none', boxSizing:'border-box',
-    appearance:'none' as React.CSSProperties['appearance'],
-  };
-  const labelSt: React.CSSProperties = {
-    display:'block', fontWeight:700, fontSize:'0.82rem',
-    color:'#475569', textTransform:'uppercase', letterSpacing:'0.04em', marginBottom:'0.35rem',
-  };
-  const cardSt: React.CSSProperties = {
-    background:'#fff', borderRadius:'1rem', border:'1px solid #e2e8f0',
-    padding:'1.5rem', boxShadow:'0 1px 4px rgba(0,0,0,0.06)',
-  };
-
-  // ── STEP: PROFILE ─────────────────────────────────────────────────────────
-  if (step === 'profile') {
-    return (
-      <div style={base}>
-        {/* Header */}
-        <div style={{ background:'linear-gradient(135deg,#1e1b4b,#3730a3)', padding:'2rem 1.5rem 1.5rem', color:'#fff' }}>
-          <div style={{ maxWidth:780, margin:'0 auto' }}>
-            <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginBottom:'0.5rem' }}>
-              <a href="/game" style={{ color:'#a5b4fc', fontSize:'0.85rem', textDecoration:'none' }}>← Back to Game</a>
-            </div>
-            <h1 style={{ fontSize:'clamp(1.6rem,4vw,2.4rem)', fontWeight:900, margin:'0 0 0.4rem', lineHeight:1.2 }}>
-              🏥 Cyber Health Check Tool
-            </h1>
-            <p style={{ color:'#a5b4fc', margin:0, fontSize:'1rem' }}>
-              Based on CSA Singapore&apos;s Cyber Essentials framework · Assessment takes ~5 minutes
-            </p>
-            {/* Progress bar */}
-            <div style={{ display:'flex', gap:'0.5rem', marginTop:'1.25rem' }}>
-              {['Company Profile','Assessment','Your Results'].map((l,i) => (
-                <div key={l} style={{ flex:1, textAlign:'center' }}>
-                  <div style={{ height:4, borderRadius:99, background: i===0 ? '#818cf8' : '#ffffff30', marginBottom:'0.3rem' }} />
-                  <span style={{ fontSize:'0.75rem', color: i===0 ? '#c7d2fe' : '#ffffff50', fontWeight:i===0?700:400 }}>{l}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+  const StepBar = ({ active }: { active: number }) => (
+    <div style={{ display:'flex', gap:'0.5rem', marginTop:'1.25rem' }}>
+      {['Company Profile','Assessment','Your Results'].map((l, i) => (
+        <div key={l} style={{ flex:1, textAlign:'center' }}>
+          <div style={{ height:4, borderRadius:99, background: i < active ? '#22c55e' : i === active ? '#818cf8' : '#ffffff30', marginBottom:'0.3rem' }} />
+          <span style={{ fontSize:'0.75rem', color: i < active ? '#86efac' : i === active ? '#c7d2fe' : '#ffffff50', fontWeight: i === active ? 700 : 400 }}>{l}</span>
         </div>
+      ))}
+    </div>
+  );
 
-        <div style={{ maxWidth:780, margin:'0 auto', padding:'2rem 1rem' }}>
-          {/* Mandatory fields */}
-          <div style={cardSt}>
-            <h2 style={{ margin:'0 0 0.25rem', fontSize:'1.15rem' }}>Company Profile</h2>
-            <p style={{ color:'#64748b', fontSize:'0.88rem', margin:'0 0 1.25rem' }}>
-              Fields marked <span style={{ color:'#dc2626' }}>*</span> are required to generate your assessment.
-            </p>
-
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))', gap:'1rem' }}>
-              <div>
-                <label style={labelSt}>Sector <span style={{ color:'#dc2626' }}>*</span></label>
-                <select value={profile.sector} onChange={e=>setProfile(p=>({...p,sector:e.target.value}))} style={inputSt}>
-                  <option value="">Select your sector…</option>
-                  {['Healthcare','Finance & Banking','Retail & E-Commerce','Manufacturing','Professional Services',
-                    'Logistics & Transport','Education','Information & Communications','Construction & Real Estate',
-                    'Food & Beverage','Government / Public Sector','Non-Profit','Other'].map(s=>(
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label style={labelSt}>Years in Operation <span style={{ color:'#dc2626' }}>*</span></label>
-                <select value={profile.years} onChange={e=>setProfile(p=>({...p,years:e.target.value}))} style={inputSt}>
-                  <option value="">Select…</option>
-                  {['Less than 1 year','1 – 3 years','3 – 5 years','5 – 10 years','More than 10 years'].map(y=>(
-                    <option key={y} value={y}>{y}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label style={labelSt}>Number of Employees <span style={{ color:'#dc2626' }}>*</span></label>
-                <select value={profile.employees} onChange={e=>setProfile(p=>({...p,employees:e.target.value}))} style={inputSt}>
-                  <option value="">Select…</option>
-                  {['1 – 9','10 – 49','50 – 199','200 or more'].map(o=>(
-                    <option key={o} value={o}>{o}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label style={labelSt}>Annual Sales Turnover (SGD) <span style={{ color:'#dc2626' }}>*</span></label>
-                <select value={profile.turnover} onChange={e=>setProfile(p=>({...p,turnover:e.target.value}))} style={inputSt}>
-                  <option value="">Select…</option>
-                  {['Less than $1M','$1M – $5M','$5M – $10M','$10M – $50M','More than $50M'].map(t=>(
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* Validation errors */}
-            {errors.length > 0 && (
-              <div style={{ marginTop:'1rem', background:'#fef2f2', border:'1px solid #fca5a5', borderRadius:'0.5rem', padding:'0.75rem 1rem' }}>
-                {errors.map(e=><p key={e} style={{ color:'#dc2626', margin:'0.15rem 0', fontSize:'0.88rem' }}>⚠ {e}</p>)}
-              </div>
-            )}
-          </div>
-
-          {/* Optional fields */}
-          <div style={{ ...cardSt, marginTop:'1rem' }}>
-            <h2 style={{ margin:'0 0 0.25rem', fontSize:'1.1rem' }}>Optional Details</h2>
-            <p style={{ color:'#64748b', fontSize:'0.88rem', margin:'0 0 1.25rem' }}>
-              Not required — helps us personalise your report.
-            </p>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))', gap:'1rem' }}>
-              {[
-                { key:'companyName', label:'Company Name' },
-                { key:'uen',         label:'UEN (Unique Entity Number)' },
-                { key:'psgRef',      label:'PSG Reference ID' },
-              ].map(f=>(
-                <div key={f.key}>
-                  <label style={labelSt}>{f.label}</label>
-                  <input value={profile[f.key as keyof Profile]}
-                    onChange={e=>setProfile(p=>({...p,[f.key]:e.target.value}))}
-                    placeholder={f.key==='uen'?'e.g. 202012345A':f.key==='psgRef'?'e.g. PSG-2024-XXXXX':''}
-                    style={inputSt} />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Info box */}
-          <div style={{ background:'#eff6ff', border:'1px solid #bfdbfe', borderRadius:'0.75rem', padding:'1rem 1.25rem', marginTop:'1rem', fontSize:'0.88rem', color:'#1e40af' }}>
-            <strong>What happens next:</strong> Based on your profile, you&apos;ll answer ~27 questions across 9 Cyber Essentials measures. Your responses generate a personalised health score out of 100 with a breakdown vs the national SME average.
-          </div>
-
-          <button onClick={handleStartAssessment}
-            style={{ marginTop:'1.5rem', width:'100%', padding:'1rem', background:'linear-gradient(135deg,#4f46e5,#7c3aed)', color:'#fff', border:'none', borderRadius:'0.875rem', fontSize:'1.1rem', fontWeight:700, cursor:'pointer' }}>
-            Start In-Depth Assessment →
-          </button>
+  // ── STEP 1: PROFILE ────────────────────────────────────────────────────────
+  if (step === 'profile') return (
+    <div style={base}>
+      <div style={{ background:'linear-gradient(135deg,#1e1b4b,#3730a3)', padding:'2rem 1.5rem 1.5rem', color:'#fff' }}>
+        <div style={{ maxWidth:780, margin:'0 auto' }}>
+          <a href="/game" style={{ color:'#a5b4fc', fontSize:'0.85rem', textDecoration:'none', display:'inline-block', marginBottom:'0.75rem' }}>← Back to Game</a>
+          <h1 style={{ fontSize:'clamp(1.6rem,4vw,2.2rem)', fontWeight:900, margin:'0 0 0.4rem', lineHeight:1.2 }}>🏥 Cyber Health Check Tool</h1>
+          <p style={{ color:'#a5b4fc', margin:0, fontSize:'0.95rem' }}>Based on CSA Singapore&apos;s Cyber Essentials framework · ~5 minutes</p>
+          <StepBar active={0} />
         </div>
       </div>
-    );
-  }
 
-  // ── STEP: QUESTIONS ───────────────────────────────────────────────────────
+      <div style={{ maxWidth:780, margin:'0 auto', padding:'2rem 1rem' }}>
+        <div style={cardSt}>
+          <h2 style={{ margin:'0 0 0.25rem', fontSize:'1.15rem' }}>Company Profile</h2>
+          <p style={{ color:'#64748b', fontSize:'0.88rem', margin:'0 0 1.25rem' }}>Fields marked <span style={{ color:'#dc2626' }}>*</span> are required.</p>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))', gap:'1rem' }}>
+            {[
+              { key:'sector', label:'Sector', type:'select', opts:['Healthcare','Finance & Banking','Retail & E-Commerce','Manufacturing','Professional Services','Logistics & Transport','Education','Information & Communications','Construction & Real Estate','Food & Beverage','Government / Public Sector','Non-Profit','Other'] },
+              { key:'years', label:'Years in Operation', type:'select', opts:['Less than 1 year','1 – 3 years','3 – 5 years','5 – 10 years','More than 10 years'] },
+              { key:'employees', label:'Number of Employees', type:'select', opts:['1 – 9','10 – 49','50 – 199','200 or more'] },
+              { key:'turnover', label:'Annual Sales Turnover (SGD)', type:'select', opts:['Less than $1M','$1M – $5M','$5M – $10M','$10M – $50M','More than $50M'] },
+            ].map(f => (
+              <div key={f.key}>
+                <label style={labelSt}>{f.label} <span style={{ color:'#dc2626' }}>*</span></label>
+                <select value={profile[f.key as keyof Profile]} onChange={e => setProfile(p => ({ ...p, [f.key]:e.target.value }))} style={{ ...inputSt, appearance:'auto' as React.CSSProperties['appearance'] }}>
+                  <option value="">Select…</option>
+                  {f.opts.map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
+              </div>
+            ))}
+          </div>
+          {errors.length > 0 && (
+            <div style={{ marginTop:'1rem', background:'#fef2f2', border:'1px solid #fca5a5', borderRadius:'0.5rem', padding:'0.75rem 1rem' }}>
+              {errors.map(e => <p key={e} style={{ color:'#dc2626', margin:'0.1rem 0', fontSize:'0.88rem' }}>⚠ {e}</p>)}
+            </div>
+          )}
+        </div>
+
+        <div style={{ ...cardSt, marginTop:'1rem' }}>
+          <h2 style={{ margin:'0 0 0.25rem', fontSize:'1.1rem' }}>Optional Details</h2>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))', gap:'1rem', marginTop:'1rem' }}>
+            {[
+              { key:'companyName', label:'Company Name', ph:'' },
+              { key:'uen',         label:'UEN',          ph:'e.g. 202012345A' },
+              { key:'psgRef',      label:'PSG Reference ID', ph:'e.g. PSG-2024-XXXXX' },
+            ].map(f => (
+              <div key={f.key}>
+                <label style={labelSt}>{f.label}</label>
+                <input value={profile[f.key as keyof Profile]} placeholder={f.ph} onChange={e => setProfile(p => ({ ...p, [f.key]:e.target.value }))} style={inputSt} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ background:'#eff6ff', border:'1px solid #bfdbfe', borderRadius:'0.75rem', padding:'1rem 1.25rem', marginTop:'1rem', fontSize:'0.88rem', color:'#1e40af' }}>
+          <strong>What happens next:</strong> You&apos;ll answer 9 questions (one per Cyber Essentials measure) by checking all practices your organisation has implemented. Your responses generate a personalised health score out of 100 with a breakdown vs the Singapore SME national average.
+        </div>
+
+        <button onClick={() => { if (validateProfile()) { initAnswers(); setStep('questions'); window.scrollTo(0,0); } }}
+          style={{ marginTop:'1.5rem', width:'100%', padding:'1rem', background:'linear-gradient(135deg,#4f46e5,#7c3aed)', color:'#fff', border:'none', borderRadius:'0.875rem', fontSize:'1.1rem', fontWeight:700, cursor:'pointer' }}>
+          Want a more in-depth analysis? Start Assessment →
+        </button>
+      </div>
+    </div>
+  );
+
+  // ── STEP 2: QUESTIONS ──────────────────────────────────────────────────────
   if (step === 'questions') {
-    const pct = Math.round((totalAnswered / totalQuestions) * 100);
+    const pct = Math.round((totalAnswered / MEASURES.length) * 100);
     return (
       <div style={base}>
-        {/* Sticky header */}
         <div style={{ position:'sticky', top:0, zIndex:50, background:'linear-gradient(135deg,#1e1b4b,#3730a3)', padding:'0.875rem 1.5rem', color:'#fff', boxShadow:'0 2px 8px rgba(0,0,0,0.2)' }}>
           <div style={{ maxWidth:780, margin:'0 auto' }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.4rem' }}>
-              <span style={{ fontWeight:700, fontSize:'0.95rem' }}>🏥 Cyber Health Check</span>
-              <span style={{ fontSize:'0.82rem', color:'#a5b4fc' }}>{totalAnswered} / {totalQuestions} answered</span>
+              <span style={{ fontWeight:700 }}>🏥 Cyber Health Check</span>
+              <span style={{ fontSize:'0.82rem', color:'#a5b4fc' }}>{totalAnswered} / {MEASURES.length} questions answered</span>
             </div>
             <div style={{ height:6, background:'#ffffff25', borderRadius:99, overflow:'hidden' }}>
               <div style={{ height:'100%', width:`${pct}%`, background:'#818cf8', borderRadius:99, transition:'width 0.3s' }} />
@@ -374,55 +364,59 @@ export default function HealthCheckPage() {
           </div>
         </div>
 
-        <div style={{ maxWidth:780, margin:'0 auto', padding:'1.5rem 1rem 3rem' }}>
+        <div style={{ maxWidth:780, margin:'0 auto', padding:'1.5rem 1rem 5rem' }}>
           <p style={{ color:'#64748b', fontSize:'0.88rem', marginBottom:'1.5rem' }}>
-            For each practice below, select <strong>Yes</strong> (fully in place), <strong>Partial</strong> (partly in place), or <strong>No</strong> (not yet done).
+            For each question below, <strong>check all options that apply</strong> to your organisation. Select &quot;None of the above&quot; if none apply.
           </p>
 
-          {MEASURES.map(m => (
-            <div key={m.id} style={{ ...cardSt, marginBottom:'1.25rem' }}>
-              {/* Measure header */}
-              <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginBottom:'0.25rem' }}>
-                <span style={{ fontSize:'1.6rem', flexShrink:0 }}>{m.icon}</span>
-                <div>
-                  <div style={{ fontWeight:800, fontSize:'1.05rem', color:m.color }}>{m.label}</div>
-                  <div style={{ fontSize:'0.8rem', color:'#64748b' }}>{m.desc}</div>
+          {MEASURES.map((m, mi) => {
+            const checked = answers[m.id] ?? new Set<number>();
+            const noneIdx = m.options.length - 1;
+            const answered = checked.size > 0;
+            return (
+              <div key={m.id} style={{ ...cardSt, marginBottom:'1.25rem', borderLeft:`4px solid ${answered ? m.color : '#e2e8f0'}` }}>
+                {/* Group chip */}
+                <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.75rem' }}>
+                  <span style={{ background:`${m.color}15`, color:m.color, border:`1px solid ${m.color}40`, borderRadius:'99px', padding:'0.15rem 0.65rem', fontSize:'0.72rem', fontWeight:700 }}>
+                    {m.group}
+                  </span>
+                  {answered && <span style={{ fontSize:'0.72rem', color:'#16a34a', fontWeight:700 }}>✓ Answered</span>}
+                </div>
+
+                {/* Measure header */}
+                <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginBottom:'0.875rem' }}>
+                  <span style={{ fontSize:'1.8rem', flexShrink:0 }}>{m.icon}</span>
+                  <div>
+                    <div style={{ fontWeight:800, fontSize:'1.05rem', color:m.color }}>{m.label}</div>
+                    <div style={{ fontSize:'0.85rem', color:'#475569', marginTop:'0.2rem', lineHeight:1.5 }}>{m.question}</div>
+                  </div>
+                </div>
+
+                <p style={{ fontSize:'0.78rem', color:'#94a3b8', fontStyle:'italic', margin:'0 0 0.875rem' }}>Please select all options that apply</p>
+
+                <div style={{ display:'flex', flexDirection:'column', gap:'0.5rem' }}>
+                  {m.options.map((opt, oi) => {
+                    const isNone = oi === noneIdx;
+                    const sel = checked.has(oi);
+                    return (
+                      <label key={oi} style={{ display:'flex', alignItems:'flex-start', gap:'0.75rem', cursor:'pointer', padding:'0.65rem 0.875rem', borderRadius:'0.625rem', border:`1.5px solid ${sel ? (isNone ? '#94a3b8' : m.color) : '#e2e8f0'}`, background: sel ? (isNone ? '#f1f5f9' : `${m.color}10`) : '#fff', transition:'all 0.1s' }}>
+                        <input type="checkbox" checked={sel} onChange={() => toggle(m.id, oi, isNone)}
+                          style={{ marginTop:'0.15rem', width:16, height:16, accentColor: isNone ? '#64748b' : m.color, flexShrink:0 }} />
+                        <span style={{ fontSize:'0.88rem', color: isNone ? '#64748b' : '#1e293b', fontStyle: isNone ? 'italic' : 'normal', fontWeight: sel ? 600 : 400, lineHeight:1.5 }}>{opt}</span>
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
-              <div style={{ height:1, background:'#e2e8f0', margin:'0.875rem 0' }} />
-
-              {QUESTIONS[m.id].map((q, qi) => {
-                const ans = answers[m.id]?.[qi] ?? null;
-                return (
-                  <div key={qi} style={{ marginBottom: qi < 2 ? '1.25rem' : 0 }}>
-                    <p style={{ margin:'0 0 0.5rem', fontSize:'0.92rem', fontWeight:600, color:'#1e293b' }}>{qi+1}. {q.q}</p>
-                    <p style={{ margin:'0 0 0.6rem', fontSize:'0.78rem', color:'#94a3b8' }}>💡 {q.hint}</p>
-                    <div style={{ display:'flex', gap:'0.5rem', flexWrap:'wrap' }}>
-                      {(['yes','partial','no'] as const).map(opt => {
-                        const cfg = {
-                          yes:     { label:'✅ Yes',     bg:'#f0fdf4', border:'#86efac', text:'#15803d', sel:'#16a34a' },
-                          partial: { label:'🔶 Partial', bg:'#fffbeb', border:'#fcd34d', text:'#b45309', sel:'#d97706' },
-                          no:      { label:'❌ No',      bg:'#fef2f2', border:'#fca5a5', text:'#b91c1c', sel:'#dc2626' },
-                        }[opt];
-                        const selected = ans === opt;
-                        return (
-                          <button key={opt} onClick={() => setAns(m.id, qi, opt)}
-                            style={{ padding:'0.45rem 1.1rem', borderRadius:'2rem', border:`2px solid ${selected ? cfg.sel : cfg.border}`, background: selected ? cfg.sel : cfg.bg, color: selected ? '#fff' : cfg.text, fontWeight: selected ? 700 : 600, fontSize:'0.85rem', cursor:'pointer', transition:'all 0.1s' }}>
-                            {cfg.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ))}
+            );
+          })}
 
           <div style={{ position:'sticky', bottom:'1rem' }}>
-            <button onClick={handleViewResults} disabled={totalAnswered < totalQuestions}
-              style={{ width:'100%', padding:'1rem', background: totalAnswered === totalQuestions ? 'linear-gradient(135deg,#16a34a,#059669)' : '#94a3b8', color:'#fff', border:'none', borderRadius:'0.875rem', fontSize:'1.1rem', fontWeight:700, cursor: totalAnswered === totalQuestions ? 'pointer' : 'not-allowed', boxShadow:'0 4px 16px rgba(0,0,0,0.15)' }}>
-              {totalAnswered < totalQuestions ? `Answer all questions to continue (${totalQuestions - totalAnswered} remaining)` : '📊 View My Health Score →'}
+            <button onClick={() => { setStep('results'); window.scrollTo(0,0); }} disabled={totalAnswered < MEASURES.length}
+              style={{ width:'100%', padding:'1rem', background: totalAnswered === MEASURES.length ? 'linear-gradient(135deg,#16a34a,#059669)' : '#94a3b8', color:'#fff', border:'none', borderRadius:'0.875rem', fontSize:'1.1rem', fontWeight:700, cursor: totalAnswered === MEASURES.length ? 'pointer' : 'not-allowed', boxShadow:'0 4px 16px rgba(0,0,0,0.15)' }}>
+              {totalAnswered < MEASURES.length
+                ? `Answer all questions to continue (${MEASURES.length - totalAnswered} remaining)`
+                : '📊 View My Cyber Health Score →'}
             </button>
           </div>
         </div>
@@ -430,140 +424,120 @@ export default function HealthCheckPage() {
     );
   }
 
-  // ── STEP: RESULTS ─────────────────────────────────────────────────────────
-  const { overall, perMeasure } = calcResults();
+  // ── STEP 3: RESULTS ────────────────────────────────────────────────────────
+  const overall = overallScore(scores);
+  const t = tier(overall);
   const providers = pickProviders(profile.employees, profile.companyName + profile.sector);
+  const aboveAvg = overall >= 53;
 
   return (
     <div style={base}>
       {/* Header */}
       <div style={{ background:'linear-gradient(135deg,#1e1b4b,#3730a3)', padding:'2rem 1.5rem 1.5rem', color:'#fff' }}>
         <div style={{ maxWidth:820, margin:'0 auto' }}>
-          <h1 style={{ fontSize:'clamp(1.4rem,4vw,2rem)', fontWeight:900, margin:'0 0 0.3rem' }}>
-            📊 Your Cyber Essentials Health Score
-          </h1>
+          <h1 style={{ fontSize:'clamp(1.4rem,4vw,2rem)', fontWeight:900, margin:'0 0 0.3rem' }}>📊 Your Cyber Essentials Health Score</h1>
           <p style={{ color:'#a5b4fc', margin:0, fontSize:'0.95rem' }}>
-            {profile.companyName ? `${profile.companyName} · ` : ''}{profile.sector} · {profile.employees} employees
+            {profile.companyName ? `${profile.companyName} · ` : ''}{profile.sector}{profile.employees ? ` · ${profile.employees} employees` : ''}
           </p>
-          {/* Step bar — step 3 active */}
-          <div style={{ display:'flex', gap:'0.5rem', marginTop:'1.25rem' }}>
-            {['Company Profile','Assessment','Your Results'].map((l,i)=>(
-              <div key={l} style={{ flex:1, textAlign:'center' }}>
-                <div style={{ height:4, borderRadius:99, background: i===2 ? '#818cf8' : '#22c55e', marginBottom:'0.3rem' }} />
-                <span style={{ fontSize:'0.75rem', color: i===2 ? '#c7d2fe' : '#86efac', fontWeight:700 }}>{l}</span>
-              </div>
-            ))}
-          </div>
+          <StepBar active={2} />
         </div>
       </div>
 
       <div style={{ maxWidth:820, margin:'0 auto', padding:'2rem 1rem 4rem' }}>
 
-        {/* ── Overall Score ── */}
-        <div style={{ ...cardSt, textAlign:'center', marginBottom:'1.25rem' }}>
-          <p style={{ color:'#64748b', margin:'0 0 0.5rem', fontSize:'0.88rem', textTransform:'uppercase', letterSpacing:'0.05em', fontWeight:700 }}>Overall Cyber Essentials Health Score</p>
-          <div style={{ fontSize:'clamp(4rem,12vw,6rem)', fontWeight:900, color:scoreColor(overall), lineHeight:1 }}>
-            {overall}
-          </div>
-          <div style={{ fontSize:'1.1rem', color:scoreColor(overall), fontWeight:700, marginBottom:'0.5rem' }}>{scoreLabel(overall)} · out of 100</div>
+        {/* ── Overall score card ── */}
+        <div style={{ ...cardSt, textAlign:'center', marginBottom:'1.25rem', background:'linear-gradient(135deg,#fafafa,#fff)' }}>
+          <p style={{ color:'#64748b', margin:'0 0 0.25rem', fontSize:'0.82rem', textTransform:'uppercase', letterSpacing:'0.06em', fontWeight:700 }}>Your Cyber Essentials health score is</p>
+          <div style={{ fontSize:'clamp(4.5rem,14vw,7rem)', fontWeight:900, color:t.color, lineHeight:1 }}>{overall}</div>
+          <div style={{ fontSize:'1.1rem', color:'#475569', margin:'0.15rem 0 0.5rem' }}><span style={{ fontWeight:700 }}>/100</span></div>
           {/* Score bar */}
-          <div style={{ height:16, background:'#e2e8f0', borderRadius:99, overflow:'hidden', maxWidth:500, margin:'0.75rem auto' }}>
-            <div style={{ height:'100%', width:`${overall}%`, background:scoreColor(overall), borderRadius:99, transition:'width 1s' }} />
+          <div style={{ height:18, background:'#e2e8f0', borderRadius:99, overflow:'hidden', maxWidth:480, margin:'0.5rem auto' }}>
+            <div style={{ height:'100%', width:`${overall}%`, background:t.color, borderRadius:99 }} />
           </div>
-          <p style={{ color:'#64748b', fontSize:'0.85rem', margin:0 }}>
-            Singapore SME National Average: <strong>~53 / 100</strong>
-            {overall >= 53
-              ? <span style={{ color:'#16a34a', fontWeight:700 }}> — you are above the national average 🎉</span>
-              : <span style={{ color:'#d97706', fontWeight:700 }}> — there is room to grow</span>}
+          <p style={{ color:'#64748b', fontSize:'0.88rem', margin:'0.5rem 0 0.75rem' }}>
+            {aboveAvg
+              ? <span>You are <strong style={{ color:'#16a34a' }}>above</strong> the national average of ~53</span>
+              : <span>You are <strong style={{ color:'#dc2626' }}>below</strong> the national average of ~53</span>}
           </p>
+          {/* Tier badge */}
+          <div style={{ display:'inline-block', background:`${t.color}15`, border:`2px solid ${t.color}50`, borderRadius:'2rem', padding:'0.5rem 1.5rem' }}>
+            <span style={{ fontWeight:800, color:t.color, fontSize:'1.1rem' }}>You are a {t.label}</span>
+          </div>
+          <p style={{ color:'#64748b', fontSize:'0.88rem', maxWidth:520, margin:'0.875rem auto 0', lineHeight:1.6 }}>{t.desc}</p>
         </div>
 
-        {/* ── Score Breakdown by Measure ── */}
+        {/* ── Score breakdown ── */}
         <div style={{ ...cardSt, marginBottom:'1.25rem' }}>
           <h2 style={{ margin:'0 0 1.25rem', fontSize:'1.1rem' }}>📈 Score Breakdown vs National Average</h2>
-          {MEASURES.map(m => {
-            const yours = perMeasure[m.id];
-            const natW  = m.natAvg;
+
+          {GROUPS.map(g => {
+            const gMeasures = MEASURES.filter(m => g.measures.includes(m.id));
             return (
-              <div key={m.id} style={{ marginBottom:'1.1rem' }}>
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.25rem' }}>
-                  <span style={{ fontWeight:700, fontSize:'0.9rem', display:'flex', alignItems:'center', gap:'0.4rem' }}>
-                    <span>{m.icon}</span> {m.label}
-                  </span>
-                  <span style={{ fontSize:'0.82rem', color:'#64748b' }}>
-                    You: <strong style={{ color:scoreColor(yours) }}>{yours}%</strong>
-                    &nbsp;·&nbsp;Avg: <strong>{natW}%</strong>
-                  </span>
+              <div key={g.id} style={{ marginBottom:'1.5rem' }}>
+                {/* Group header */}
+                <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.75rem', paddingBottom:'0.5rem', borderBottom:'2px solid #f1f5f9' }}>
+                  <span style={{ fontSize:'1.2rem' }}>{g.icon}</span>
+                  <span style={{ fontWeight:800, fontSize:'1rem', color:'#1e293b' }}>{g.label}</span>
                 </div>
-                {/* Your score bar */}
-                <div style={{ position:'relative', height:12, background:'#e2e8f0', borderRadius:99, overflow:'visible', marginBottom:'0.2rem' }}>
-                  <div style={{ height:'100%', width:`${yours}%`, background:scoreColor(yours), borderRadius:99 }} />
-                  {/* National average marker */}
-                  <div style={{ position:'absolute', top:'-3px', left:`${natW}%`, width:2, height:18, background:'#64748b', borderRadius:1 }} title={`National avg: ${natW}%`} />
-                </div>
-                <div style={{ display:'flex', justifyContent:'flex-end' }}>
-                  <span style={{ fontSize:'0.7rem', color:'#94a3b8' }}>▼ national avg ({natW}%)</span>
-                </div>
+
+                {gMeasures.map(m => {
+                  const yours = scores[m.id];
+                  const nat   = m.natAvg;
+                  return (
+                    <div key={m.id} style={{ marginBottom:'1rem', paddingLeft:'0.5rem' }}>
+                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.3rem' }}>
+                        <span style={{ fontWeight:700, fontSize:'0.88rem', display:'flex', alignItems:'center', gap:'0.35rem' }}>
+                          <span>{m.icon}</span> {m.label}
+                        </span>
+                        <span style={{ fontSize:'0.8rem', color:'#64748b' }}>
+                          You: <strong style={{ color:scoreColor(yours) }}>{yours}%</strong>
+                          &nbsp;·&nbsp;Nat avg: <strong>{nat}%</strong>
+                        </span>
+                      </div>
+                      {/* Bar track */}
+                      <div style={{ position:'relative', height:14, background:'#f1f5f9', borderRadius:99, overflow:'visible' }}>
+                        {/* Your score */}
+                        <div style={{ height:'100%', width:`${yours}%`, background:scoreColor(yours), borderRadius:99 }} />
+                        {/* National average marker */}
+                        <div style={{ position:'absolute', top:'-4px', left:`${nat}%`, width:2, height:22, background:'#94a3b8', borderRadius:1 }} />
+                      </div>
+                      <div style={{ display:'flex', justifyContent:'flex-end', marginTop:'0.2rem' }}>
+                        <span style={{ fontSize:'0.68rem', color:'#94a3b8' }}>▼ national avg ({nat}%)</span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             );
           })}
-          <p style={{ color:'#94a3b8', fontSize:'0.75rem', marginTop:'0.5rem', borderTop:'1px solid #e2e8f0', paddingTop:'0.75rem' }}>
-            ▼ marker = Singapore SME national average. Source: CSA Singapore Cyber Landscape reports.
-          </p>
 
-          {/* Social engineering stat callout */}
+          <div style={{ borderTop:'1px solid #e2e8f0', paddingTop:'0.875rem', fontSize:'0.75rem', color:'#94a3b8' }}>
+            ▼ marker = Singapore SME national average · Source: CSA Singapore Cyber Landscape reports
+          </div>
+
+          {/* Social engineering callout */}
           <div style={{ marginTop:'1rem', background:'#fef9c3', border:'1px solid #fde047', borderRadius:'0.75rem', padding:'0.875rem 1.1rem', display:'flex', gap:'0.75rem', alignItems:'flex-start' }}>
-            <span style={{ fontSize:'1.4rem', flexShrink:0 }}>⚠️</span>
+            <span style={{ fontSize:'1.3rem', flexShrink:0 }}>⚠️</span>
             <p style={{ margin:0, fontSize:'0.85rem', color:'#713f12', lineHeight:1.6 }}>
-              <strong>Did you know?</strong> Social engineering (phishing, impersonation, pretexting) is the <strong>#2 top cybersecurity incident</strong> affecting Singapore organisations — making People &amp; Training one of the most critical yet under-invested measures for SMEs.
+              <strong>Did you know?</strong> Social engineering (phishing, impersonation, pretexting) is the <strong>#2 top cybersecurity incident</strong> affecting Singapore organisations — making People one of the most critical yet under-invested measures for SMEs.
               <br /><span style={{ fontSize:'0.75rem', color:'#92400e', marginTop:'0.25rem', display:'block' }}>Source: CSA&apos;s Cybersecurity Health Report 2023</span>
             </p>
           </div>
         </div>
 
-        {/* ── Recommended Actions ── */}
-        <div style={{ ...cardSt, marginBottom:'1.25rem' }}>
-          <h2 style={{ margin:'0 0 1rem', fontSize:'1.1rem' }}>🎯 Priority Recommendations</h2>
-          <div style={{ display:'grid', gap:'0.75rem' }}>
-            {MEASURES
-              .map(m => ({ ...m, score: perMeasure[m.id] }))
-              .sort((a,b) => a.score - b.score)
-              .slice(0,3)
-              .map(m => (
-                <div key={m.id} style={{ background:'#fef2f2', border:'1px solid #fca5a5', borderRadius:'0.75rem', padding:'0.875rem 1rem', display:'flex', gap:'0.75rem', alignItems:'flex-start' }}>
-                  <span style={{ fontSize:'1.5rem', flexShrink:0 }}>{m.icon}</span>
-                  <div>
-                    <div style={{ fontWeight:800, fontSize:'0.9rem', color:m.color }}>{m.label} — <span style={{ color:scoreColor(m.score) }}>{m.score}%</span></div>
-                    <div style={{ color:'#64748b', fontSize:'0.82rem', marginTop:'0.2rem' }}>
-                      {m.id === 'incident'  && 'Document an incident response plan and run at least one annual tabletop exercise.'}
-                      {m.id === 'people'    && "Launch a mandatory annual security awareness programme — social engineering is the #2 top cybersecurity incident in Singapore organisations (CSA's Cybersecurity Health Report 2023). Even 1–2 hours of training significantly reduces phishing and social engineering risk."}
-                      {m.id === 'network'   && 'Review firewall rules, enable WPA3 on Wi-Fi, and set up network activity logging.'}
-                      {m.id === 'secure'    && 'Remove default credentials, disable unused services, and follow a hardening checklist.'}
-                      {m.id === 'access'    && 'Enable MFA on all email and remote access accounts and enforce least-privilege roles.'}
-                      {m.id === 'data'      && 'Automate daily backups and store copies offline or in a separate cloud environment.'}
-                      {m.id === 'assets'    && 'Build a simple device and software inventory — a spreadsheet is a good starting point.'}
-                      {m.id === 'patch'     && 'Enable auto-updates on all endpoints and track end-of-life software for replacement.'}
-                      {m.id === 'malware'   && 'Deploy endpoint protection (EDR) on all devices and enforce USB restriction policies.'}
-                    </div>
-                  </div>
-                </div>
-              ))}
-          </div>
-        </div>
-
-        {/* ── CISO-as-a-Service Suggestions ── */}
+        {/* ── CISO-as-a-Service ── */}
         <div style={{ ...cardSt, marginBottom:'1.25rem' }}>
           <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', flexWrap:'wrap', gap:'0.5rem', marginBottom:'1rem' }}>
             <div>
-              <h2 style={{ margin:'0 0 0.25rem', fontSize:'1.1rem' }}>👔 Suggested CISO-as-a-Service Providers</h2>
+              <h2 style={{ margin:'0 0 0.25rem', fontSize:'1.1rem' }}>👔 CISO as-a-Service (Cyber Essentials)</h2>
               <p style={{ color:'#64748b', fontSize:'0.82rem', margin:0 }}>
-                CSA-recognised providers matched to your organisation ({profile.employees} employees). Funded support available.
+                Receive funding-supported assistance from CSA-approved cybersecurity consultants. Matched to your organisation size ({profile.employees} employees).
               </p>
             </div>
             <a href="https://www.csa.gov.sg/our-programmes/support-for-enterprises/sg-cyber-safe-programme/cybersecurity-certification-for-organisations/ciso-as-a-service-to-develop-cybersecurity-health-plan/"
               target="_blank" rel="noopener noreferrer"
               style={{ fontSize:'0.8rem', color:'#4f46e5', fontWeight:700, textDecoration:'none', whiteSpace:'nowrap' }}>
-              View full CSA listing →
+              Learn more about CISOaaS →
             </a>
           </div>
           <div style={{ display:'grid', gap:'0.875rem' }}>
@@ -573,7 +547,7 @@ export default function HealthCheckPage() {
                   <div style={{ fontWeight:800, fontSize:'0.95rem', color:'#1e293b' }}>{p.name}</div>
                   <div style={{ color:'#64748b', fontSize:'0.82rem', marginTop:'0.15rem' }}>Contact: {p.contact}</div>
                 </div>
-                <div style={{ display:'flex', gap:'0.75rem', alignItems:'center', flexShrink:0 }}>
+                <div style={{ display:'flex', gap:'0.875rem', alignItems:'center', flexWrap:'wrap', flexShrink:0 }}>
                   <a href={`mailto:${p.email}`} style={{ color:'#4f46e5', fontSize:'0.83rem', fontWeight:700, textDecoration:'none' }}>✉️ {p.email}</a>
                   <span style={{ color:'#64748b', fontSize:'0.83rem' }}>📞 {p.phone}</span>
                 </div>
@@ -581,36 +555,42 @@ export default function HealthCheckPage() {
             ))}
           </div>
           <div style={{ marginTop:'0.875rem', background:'#eff6ff', border:'1px solid #bfdbfe', borderRadius:'0.5rem', padding:'0.75rem 1rem', fontSize:'0.82rem', color:'#1e40af' }}>
-            💡 The CSA CISOaaS scheme is co-funded — eligible SMEs receive up to 70% funding support. Contact a provider above to get started.
+            💡 Eligible SMEs receive up to 70% funding support under the CSA CISOaaS scheme. Contact a provider above to get started.
           </div>
         </div>
 
-        {/* ── Next Steps ── */}
-        <div style={{ display:'grid', gap:'0.875rem', gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))', marginBottom:'1.25rem' }}>
-          {[
-            { icon:'🛡️', title:'Cyber Essentials Mark', desc:'Get certified to show customers you take security seriously.', url:'https://go.gov.sg/cyber-essentials', color:'#4f46e5' },
-            { icon:'💻', title:'Readiness Scan (Device)', desc:'Run an automated device security scan right now.', url:'https://cetool-mvp.vercel.app/', color:'#0891b2' },
-            { icon:'📋', title:'Self-Assessment Checklist', desc:'Download the free Cyber Essentials self-assessment Excel.', url:'https://isomer-user-content.by.gov.sg/36/f9481424-2c5a-4e02-a113-0f18ed7cd4ef/cyber-essentials-self-assessment-v202504.xlsx', color:'#16a34a' },
-          ].map(n => (
-            <a key={n.title} href={n.url} target="_blank" rel="noopener noreferrer"
-              style={{ background:'#fff', border:`2px solid ${n.color}30`, borderRadius:'1rem', padding:'1.25rem', textDecoration:'none', color:'#1e293b', display:'block', transition:'box-shadow 0.15s' }}>
-              <div style={{ fontSize:'1.75rem', marginBottom:'0.4rem' }}>{n.icon}</div>
-              <div style={{ fontWeight:800, fontSize:'0.95rem', color:n.color }}>{n.title}</div>
-              <div style={{ color:'#64748b', fontSize:'0.82rem', marginTop:'0.25rem' }}>{n.desc}</div>
-            </a>
-          ))}
+        {/* ── Certifications & resources ── */}
+        <div style={{ ...cardSt, marginBottom:'1.25rem' }}>
+          <h2 style={{ margin:'0 0 1rem', fontSize:'1.1rem' }}>🏅 Cybersecurity Certifications</h2>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))', gap:'0.875rem' }}>
+            {[
+              { icon:'🛡️', title:'Cyber Essentials Mark', desc:'For SMEs embarking on their cybersecurity journey. Recognised certification for basic cyber hygiene.', url:'https://www.csa.gov.sg/our-programmes/support-for-enterprises/sg-cyber-safe-programme/cybersecurity-certification-for-organisations/cyber-essentials', color:'#4f46e5' },
+              { icon:'🔰', title:'Cyber Trust Mark', desc:'For SMEs with more extensive digitalised operations facing higher cyber risk.', url:'https://www.csa.gov.sg/our-programmes/support-for-enterprises/sg-cyber-safe-programme/cybersecurity-certification-for-organisations/cyber-trust', color:'#0891b2' },
+              { icon:'💻', title:'Cyber Essentials Readiness Scan (Device)', desc:'Run an automated device security scan right now — free tool from CSA.', url:'https://cetool-mvp.vercel.app/', color:'#16a34a' },
+            ].map(n => (
+              <a key={n.title} href={n.url} target="_blank" rel="noopener noreferrer"
+                style={{ background:'#fff', border:`2px solid ${n.color}25`, borderRadius:'1rem', padding:'1.25rem', textDecoration:'none', color:'#1e293b', display:'block' }}>
+                <div style={{ fontSize:'1.75rem', marginBottom:'0.4rem' }}>{n.icon}</div>
+                <div style={{ fontWeight:800, fontSize:'0.95rem', color:n.color }}>{n.title}</div>
+                <div style={{ color:'#64748b', fontSize:'0.82rem', marginTop:'0.25rem', lineHeight:1.5 }}>{n.desc}</div>
+                <div style={{ color:n.color, fontSize:'0.8rem', fontWeight:700, marginTop:'0.5rem' }}>Learn more →</div>
+              </a>
+            ))}
+          </div>
         </div>
 
+        {/* ── Action buttons ── */}
         <div style={{ display:'flex', gap:'0.75rem', flexWrap:'wrap' }}>
           <button onClick={() => { setStep('profile'); setErrors([]); window.scrollTo(0,0); }}
             style={{ padding:'0.75rem 1.5rem', background:'#f1f5f9', border:'1px solid #e2e8f0', borderRadius:'0.75rem', color:'#475569', fontWeight:700, cursor:'pointer', fontSize:'0.95rem' }}>
             ← Start Over
           </button>
+          <button onClick={() => { setStep('questions'); window.scrollTo(0,0); }}
+            style={{ padding:'0.75rem 1.5rem', background:'#f1f5f9', border:'1px solid #e2e8f0', borderRadius:'0.75rem', color:'#475569', fontWeight:700, cursor:'pointer', fontSize:'0.95rem' }}>
+            ✏️ Edit Answers
+          </button>
           <a href="/game" style={{ padding:'0.75rem 1.5rem', background:'linear-gradient(135deg,#4f46e5,#7c3aed)', border:'none', borderRadius:'0.75rem', color:'#fff', fontWeight:700, cursor:'pointer', fontSize:'0.95rem', textDecoration:'none' }}>
             🎮 Back to Game
-          </a>
-          <a href="/game/resources" style={{ padding:'0.75rem 1.5rem', background:'#0f172a', border:'none', borderRadius:'0.75rem', color:'#fff', fontWeight:700, cursor:'pointer', fontSize:'0.95rem', textDecoration:'none' }}>
-            🛡️ CSA Resources
           </a>
         </div>
       </div>
