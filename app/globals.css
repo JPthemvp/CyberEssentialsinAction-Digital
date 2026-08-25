@@ -69,8 +69,8 @@ img, video, iframe { max-width: 100%; height: auto; }
 /* ─── Attack answer grid — 2 columns on tablet+, 1 on small phone ───────── */
 .attack-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; }
 
-/* ─── Icon picker — 5 cols on mobile, 10 on wider screens ───────────────── */
-.icon-picker-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 0.35rem; }
+/* ─── Icon picker — 6 cols on tablet+, 4 on mobile ──────────────────────── */
+.icon-picker-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.4rem; }
 
 /* ─── Join page outer wrapper ────────────────────────────────────────────── */
 .join-page { padding: 2rem 1.5rem; }
@@ -96,8 +96,8 @@ img, video, iframe { max-width: 100%; height: auto; }
   /* Answer grid: 1 column on phones so text never wraps mid-word */
   .attack-grid { grid-template-columns: 1fr; gap: 0.55rem; }
 
-  /* Icon picker: 5 columns (≥44px per cell on 375px screen) */
-  .icon-picker-grid { grid-template-columns: repeat(5, 1fr); gap: 0.4rem; }
+  /* Icon picker: 4 columns on phones (≥44px per cell on 375px screen) */
+  .icon-picker-grid { grid-template-columns: repeat(4, 1fr); gap: 0.4rem; }
 
   /* Join page: tighter outer padding */
   .join-page { padding: 1.25rem 1rem; }

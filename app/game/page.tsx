@@ -6,7 +6,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { SECTORS } from '@/lib/game-data';
 import { generateRoomCode } from '@/lib/game-utils';
-import { PLAYER_ICONS, encodePlayerName, parsePlayerName } from '@/lib/player-utils';
+import { PLAYER_ICONS, ICON_CATEGORIES, encodePlayerName, parsePlayerName } from '@/lib/player-utils';
 import { createClient } from '@supabase/supabase-js';
 
 function getSupabase() {
@@ -26,6 +26,7 @@ function GameHomePageInner() {
   const [hostName, setHostName] = useState('');
   const [playerName, setPlayerName] = useState('');
   const [selectedIcon, setSelectedIcon] = useState<string>(() => PLAYER_ICONS[Math.floor(Math.random() * PLAYER_ICONS.length)]);
+  const [iconCategory, setIconCategory] = useState<string>(ICON_CATEGORIES[0].label);
   const [joinCode, setJoinCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -311,22 +312,53 @@ function GameHomePageInner() {
             {/* Icon picker */}
             <div style={{ marginBottom: '1.25rem' }}>
               <label style={labelStyle}>Choose Your Icon</label>
-              <div className="icon-picker-grid" style={{ marginTop: '0.5rem' }}>
-                {PLAYER_ICONS.map(icon => (
+
+              {/* Category tabs */}
+              <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginTop: '0.5rem', marginBottom: '0.5rem' }}>
+                {ICON_CATEGORIES.map(cat => (
+                  <button key={cat.label} onClick={() => setIconCategory(cat.label)}
+                    style={{
+                      background: iconCategory === cat.label ? 'rgba(99,102,241,0.35)' : 'rgba(255,255,255,0.06)',
+                      border: `2px solid ${iconCategory === cat.label ? '#6366f1' : 'transparent'}`,
+                      borderRadius: '0.5rem',
+                      padding: '0.25rem 0.6rem',
+                      cursor: 'pointer',
+                      color: iconCategory === cat.label ? '#a5b4fc' : '#94a3b8',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      whiteSpace: 'nowrap',
+                      transition: 'all 0.1s',
+                    }}>
+                    {cat.emoji} {cat.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Icon grid for selected category */}
+              <div className="icon-picker-grid">
+                {(ICON_CATEGORIES.find(c => c.label === iconCategory)?.icons ?? []).map(icon => (
                   <button key={icon} onClick={() => setSelectedIcon(icon)}
-                    style={{ fontSize: '1.5rem', background: selectedIcon === icon ? 'rgba(99,102,241,0.35)' : 'rgba(255,255,255,0.06)', border: `2px solid ${selectedIcon === icon ? '#6366f1' : 'transparent'}`, borderRadius: '0.625rem', padding: '0.35rem', cursor: 'pointer', transition: 'all 0.1s', lineHeight: 1 }}
+                    style={{
+                      fontSize: '1.5rem',
+                      background: selectedIcon === icon ? 'rgba(99,102,241,0.35)' : 'rgba(255,255,255,0.06)',
+                      border: `2px solid ${selectedIcon === icon ? '#6366f1' : 'transparent'}`,
+                      borderRadius: '0.625rem',
+                      padding: '0.35rem',
+                      cursor: 'pointer',
+                      transition: 'all 0.1s',
+                      lineHeight: 1,
+                    }}
                     title={icon}>
                     {icon}
                   </button>
                 ))}
               </div>
+
               {/* Preview badge */}
-              {playerName.trim() && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.75rem', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: '0.625rem', padding: '0.45rem 0.875rem', width: 'fit-content' }}>
-                  <span style={{ fontSize: '1.4rem' }}>{selectedIcon}</span>
-                  <span style={{ fontWeight: 700, color: '#e2e8f0' }}>{playerName.trim()}</span>
-                </div>
-              )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.75rem', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: '0.625rem', padding: '0.45rem 0.875rem', width: 'fit-content' }}>
+                <span style={{ fontSize: '1.4rem' }}>{selectedIcon}</span>
+                <span style={{ fontWeight: 700, color: '#e2e8f0' }}>{playerName.trim() || 'Your name'}</span>
+              </div>
             </div>
             <div style={{ marginBottom: '1rem' }}>
               <label style={labelStyle}>Your Name</label>
