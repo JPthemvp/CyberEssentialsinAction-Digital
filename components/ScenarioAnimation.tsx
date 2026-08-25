@@ -208,8 +208,8 @@ export function ScenarioAnimation({ scenarioId, label }: { scenarioId: string; l
         </div>
       )}
 
-      {/* Animated simulation — always shown below the video (or alone if no video) */}
-      {scene && (
+      {/* Animated simulation — only shown when no real video exists */}
+      {scene && !video && (
         <div>
           <div style={{ color: '#64748b', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
             📽 {label || 'What it looks like'} — animated simulation
