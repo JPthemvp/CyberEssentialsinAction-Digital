@@ -2,6 +2,7 @@
 // All content sourced from CSA Cyber Essentials in Action Facilitator Guide
 
 export const SECTORS = [
+  { id: 'sicw', label: 'SICW', icon: '🌐', desc: 'Singapore International Cyber Week — up to 150 participants' },
   { id: 'minlaw', label: 'MinLaw Clinic', icon: '⚖️', desc: 'Legal & Law Firms' },
   { id: 'hia', label: 'HIA Clinic', icon: '🏥', desc: 'Healthcare & Healthtech' },
   { id: 'finance', label: 'Finance Clinic', icon: '🏦', desc: 'Finance & Banking' },

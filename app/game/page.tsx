@@ -258,28 +258,40 @@ function GameHomePageInner() {
             Choose the type of cyber health clinic or sector for this session
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem' }}>
-            {SECTORS.map(s => (
-              <button
-                key={s.id}
-                onClick={() => { setSelectedSector(s.id); setStep('setup'); }}
-                style={{
-                  background: selectedSector === s.id
-                    ? 'linear-gradient(135deg, #6366f1, #8b5cf6)'
-                    : 'rgba(255,255,255,0.06)',
-                  border: `2px solid ${selectedSector === s.id ? '#6366f1' : 'rgba(255,255,255,0.1)'}`,
-                  borderRadius: '1rem',
-                  padding: '1.25rem',
-                  cursor: 'pointer',
-                  textAlign: 'center',
-                  transition: 'all 0.15s',
-                  color: '#fff',
-                }}
-              >
-                <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>{s.icon}</div>
-                <div style={{ fontWeight: 700, fontSize: '1rem' }}>{s.label}</div>
-                <div style={{ color: '#94a3b8', fontSize: '0.8rem', marginTop: '0.25rem' }}>{s.desc}</div>
-              </button>
-            ))}
+            {SECTORS.map(s => {
+              const isSICW = s.id === 'sicw';
+              const isSelected = selectedSector === s.id;
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => { setSelectedSector(s.id); setStep('setup'); }}
+                  style={{
+                    position: 'relative',
+                    background: isSelected
+                      ? 'linear-gradient(135deg, #6366f1, #8b5cf6)'
+                      : isSICW
+                        ? 'linear-gradient(135deg, rgba(234,179,8,0.15), rgba(251,191,36,0.08))'
+                        : 'rgba(255,255,255,0.06)',
+                    border: `2px solid ${isSelected ? '#6366f1' : isSICW ? '#eab308' : 'rgba(255,255,255,0.1)'}`,
+                    borderRadius: '1rem',
+                    padding: '1.25rem',
+                    cursor: 'pointer',
+                    textAlign: 'center',
+                    transition: 'all 0.15s',
+                    color: '#fff',
+                  }}
+                >
+                  {isSICW && (
+                    <div style={{ position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)', background: '#eab308', color: '#000', fontSize: '0.65rem', fontWeight: 800, borderRadius: '99px', padding: '0.15rem 0.6rem', whiteSpace: 'nowrap', letterSpacing: '0.05em' }}>
+                      ⭐ SICW RECOMMENDED
+                    </div>
+                  )}
+                  <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem', marginTop: isSICW ? '0.5rem' : 0 }}>{s.icon}</div>
+                  <div style={{ fontWeight: 700, fontSize: '1rem', color: isSICW && !isSelected ? '#fbbf24' : '#fff' }}>{s.label}</div>
+                  <div style={{ color: isSICW && !isSelected ? '#fde68a' : '#94a3b8', fontSize: '0.8rem', marginTop: '0.25rem' }}>{s.desc}</div>
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
