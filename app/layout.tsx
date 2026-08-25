@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import LandscapePrompt from '@/components/LandscapePrompt';
 
 export const metadata: Metadata = {
   title: 'Cyber Essentials in Action',
@@ -19,6 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body style={{ margin: 0, padding: 0, background: '#0f0f1a' }}>
         {children}
+        <LandscapePrompt />
       </body>
     </html>
   );
