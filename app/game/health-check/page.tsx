@@ -510,6 +510,15 @@ export default function HealthCheckPage() {
           <p style={{ color:'#94a3b8', fontSize:'0.75rem', marginTop:'0.5rem', borderTop:'1px solid #e2e8f0', paddingTop:'0.75rem' }}>
             ▼ marker = Singapore SME national average. Source: CSA Singapore Cyber Landscape reports.
           </p>
+
+          {/* Social engineering stat callout */}
+          <div style={{ marginTop:'1rem', background:'#fef9c3', border:'1px solid #fde047', borderRadius:'0.75rem', padding:'0.875rem 1.1rem', display:'flex', gap:'0.75rem', alignItems:'flex-start' }}>
+            <span style={{ fontSize:'1.4rem', flexShrink:0 }}>⚠️</span>
+            <p style={{ margin:0, fontSize:'0.85rem', color:'#713f12', lineHeight:1.6 }}>
+              <strong>Did you know?</strong> Social engineering (phishing, impersonation, pretexting) is the <strong>#2 top cybersecurity incident</strong> affecting Singapore organisations — making People &amp; Training one of the most critical yet under-invested measures for SMEs.
+              <br /><span style={{ fontSize:'0.75rem', color:'#92400e', marginTop:'0.25rem', display:'block' }}>Source: CSA&apos;s Cybersecurity Health Report 2023</span>
+            </p>
+          </div>
         </div>
 
         {/* ── Recommended Actions ── */}
