@@ -211,6 +211,12 @@ function GameHomePageInner() {
             </button>
           </div>
 
+          {/* Floating health check button */}
+          <a href="/game/health-check" target="_blank" rel="noopener noreferrer"
+            style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', zIndex: 100, background: 'linear-gradient(135deg,#4f46e5,#7c3aed)', color: '#fff', textDecoration: 'none', borderRadius: '0.875rem', padding: '0.7rem 1.35rem', fontSize: '0.95rem', fontWeight: 700, boxShadow: '0 4px 20px rgba(79,70,229,0.5)', display: 'inline-block' }}>
+            🏥 Cyber Health Check
+          </a>
+
           {/* Game mode preview */}
           <div style={{ display: 'flex', gap: '1rem', marginTop: '3rem', flexWrap: 'wrap', justifyContent: 'center' }}>
             {[

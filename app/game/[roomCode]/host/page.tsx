@@ -117,6 +117,7 @@ export default function HostPage() {
   const [copied, setCopied] = useState(false);
   const [showQuestionPicker, setShowQuestionPicker] = useState(false);
   const [playAsNewPending, setPlayAsNewPending] = useState<number | null>(null);
+  const [showEndGameConfirm, setShowEndGameConfirm] = useState(false);
 
   const loadRoom = useCallback(async () => {
     const { data } = await supabase.from('game_rooms').select('*').eq('room_code', roomCode).single();
@@ -441,12 +442,43 @@ ${(qs.answers || []).sort((a, b) => (a.response_time_ms || 99999) - (b.response_
 
       {/* End Game button — fixed bottom-right, always visible while game is live */}
       {room.status !== 'ended' && (
-        <button onClick={() => updateRoom({ status: 'ended' })}
+        <button onClick={() => setShowEndGameConfirm(true)}
           style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', zIndex: 100, background: 'rgba(239,68,68,0.15)', border: '2px solid rgba(239,68,68,0.4)', color: '#f87171', borderRadius: '0.75rem', padding: '0.6rem 1.25rem', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer', backdropFilter: 'blur(8px)', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}
           onMouseOver={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,0.35)'; }}
           onMouseOut={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,0.15)'; }}>
           🏁 End Game
         </button>
+      )}
+
+      {/* End Game — floating health check button after game ends */}
+      {room.status === 'ended' && (
+        <a href="/game/health-check" target="_blank" rel="noopener noreferrer"
+          style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', zIndex: 100, background: 'linear-gradient(135deg,#4f46e5,#7c3aed)', border: 'none', color: '#fff', borderRadius: '0.875rem', padding: '0.7rem 1.35rem', fontSize: '0.95rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 20px rgba(79,70,229,0.5)', textDecoration: 'none', display: 'inline-block' }}>
+          🏥 Cyber Health Check
+        </a>
+      )}
+
+      {/* End Game confirm dialog */}
+      {showEndGameConfirm && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#1e293b', border: '2px solid rgba(239,68,68,0.5)', borderRadius: '1.25rem', padding: '2rem', maxWidth: 420, width: '90%', textAlign: 'center' }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>🏁</div>
+            <h3 style={{ color: '#f87171', fontSize: '1.2rem', marginBottom: '0.5rem' }}>End the game?</h3>
+            <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+              This will end the session for all players and show the final leaderboard. This cannot be undone.
+            </p>
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+              <button onClick={() => { setShowEndGameConfirm(false); updateRoom({ status: 'ended' }); }}
+                style={{ background: 'rgba(239,68,68,0.2)', border: '2px solid rgba(239,68,68,0.5)', color: '#f87171', borderRadius: '0.75rem', padding: '0.6rem 1.5rem', fontWeight: 700, cursor: 'pointer', fontSize: '0.95rem' }}>
+                ✓ OK — End Game
+              </button>
+              <button onClick={() => setShowEndGameConfirm(false)}
+                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#94a3b8', borderRadius: '0.75rem', padding: '0.6rem 1.5rem', fontWeight: 700, cursor: 'pointer', fontSize: '0.95rem' }}>
+                ✕ Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Play as New confirmation modal */}
@@ -938,7 +970,6 @@ ${(qs.answers || []).sort((a, b) => (a.response_time_ms || 99999) - (b.response_
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
               {room.mode === 'attack' && <button onClick={nextQuestion} style={greenBtn}>⚡ Next Question</button>}
               {room.mode === 'quest' && <button onClick={nextQuestion} style={greenBtn}>🎭 Next Scenario</button>}
-              <button onClick={() => updateRoom({ status: 'ended' })} style={grayBtn}>🏁 End Game</button>
             </div>
           </div>
         )}

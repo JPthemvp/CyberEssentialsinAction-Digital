@@ -651,8 +651,12 @@ export default function PlayPage() {
             <p style={{ color: '#94a3b8', marginBottom: '2rem' }}>Final score: <strong style={{ color: '#fbbf24' }}>{player.score.toLocaleString()} pts</strong> · Rank #{myRank}</p>
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
               <a href="/game" style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)', color: '#fff', textDecoration: 'none', borderRadius: '0.75rem', padding: '0.875rem 2rem', fontWeight: 700, fontSize: '1.1rem', display: 'inline-block' }}>🏠 Play Again</a>
-              <a href="/game/resources" target="_blank" rel="noopener noreferrer" style={{ background: 'rgba(200,16,46,0.2)', border: '2px solid #C8102E', color: '#fca5a5', textDecoration: 'none', borderRadius: '0.75rem', padding: '0.875rem 2rem', fontWeight: 700, fontSize: '1.1rem', display: 'inline-block' }}>🛡️ CSA Resources</a>
             </div>
+            {/* Floating health check button */}
+            <a href="/game/health-check" target="_blank" rel="noopener noreferrer"
+              style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', zIndex: 100, background: 'linear-gradient(135deg,#4f46e5,#7c3aed)', color: '#fff', textDecoration: 'none', borderRadius: '0.875rem', padding: '0.7rem 1.35rem', fontSize: '0.95rem', fontWeight: 700, boxShadow: '0 4px 20px rgba(79,70,229,0.5)', display: 'inline-block' }}>
+              🏥 Cyber Health Check
+            </a>
           </div>
         )}
       </div>

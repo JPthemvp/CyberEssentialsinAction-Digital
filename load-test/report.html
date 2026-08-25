@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Load Test Report — Cyber Essentials in Action</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f172a; color: #e2e8f0; line-height: 1.6; }
+  a { color: #60a5fa; }
+  .hero { background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 60%); padding: 3rem 2rem 2rem; text-align: center; border-bottom: 1px solid #1e3a5f; }
+  .hero h1 { font-size: clamp(1.6rem, 4vw, 2.8rem); font-weight: 900; color: #fff; margin-bottom: 0.5rem; }
+  .hero p  { color: #94a3b8; font-size: 1.05rem; }
+  .badge-row { display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; margin-top: 1rem; }
+  .badge-item { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 2rem; padding: 0.3rem 0.9rem; font-size: 0.82rem; color: #a5b4fc; font-weight: 600; }
+  .section { max-width: 1100px; margin: 2.5rem auto; padding: 0 1.5rem; }
+  h2 { font-size: 1.4rem; font-weight: 800; color: #f1f5f9; margin-bottom: 1.25rem; padding-bottom: 0.5rem; border-bottom: 1px solid #1e3a5f; }
+  h3 { font-size: 1.05rem; font-weight: 700; color: #cbd5e1; margin: 1.25rem 0 0.75rem; }
+
+  /* Stat cards */
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr)); gap: 1rem; }
+  .stat-card { background: #1e293b; border: 1px solid #334155; border-radius: 1rem; padding: 1.25rem 1rem; text-align: center; }
+  .stat-emoji { font-size: 1.75rem; margin-bottom: 0.4rem; }
+  .stat-value { font-size: 2rem; font-weight: 900; color: #f1f5f9; line-height: 1; }
+  .stat-unit { font-size: 1rem; font-weight: 600; color: #94a3b8; margin-left: 0.2rem; }
+  .stat-label { font-size: 0.8rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.3rem; }
+  .stat-sub { font-size: 0.75rem; color: #475569; margin-top: 0.2rem; }
+
+  /* Utilisation bars */
+  .util-box { background: #1e293b; border: 1px solid #334155; border-radius: 1rem; padding: 1.25rem 1.5rem; margin-bottom: 1.25rem; }
+  .util-title { font-weight: 700; font-size: 1rem; color: #e2e8f0; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem; }
+  .bar-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; }
+  .bar-label { font-size: 0.83rem; color: #94a3b8; width: 210px; flex-shrink: 0; }
+  .bar-track { flex: 1; height: 10px; background: #334155; border-radius: 99px; overflow: hidden; }
+  .bar-fill  { height: 100%; border-radius: 99px; transition: width 0.4s; }
+  .bar-pct   { font-size: 0.83rem; font-weight: 700; width: 52px; text-align: right; flex-shrink: 0; }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; background: #1e293b; border-radius: 0.75rem; overflow: hidden; }
+  th { background: #0f172a; color: #94a3b8; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.6rem 1rem; text-align: left; }
+  td { padding: 0.6rem 1rem; font-size: 0.88rem; border-bottom: 1px solid #1e3a5f; color: #e2e8f0; }
+  tr:last-child td { border-bottom: none; }
+  .badge { display: inline-block; border-radius: 0.3rem; padding: 0.1rem 0.5rem; font-size: 0.72rem; font-weight: 700; }
+  .badge.attack { background: rgba(249,115,22,0.2); color: #fb923c; }
+  .badge.quest  { background: rgba(34,197,94,0.2);  color: #4ade80; }
+
+  /* Warnings */
+  .warn { border: 1px solid; border-radius: 0.75rem; padding: 0.9rem 1.1rem; margin-bottom: 0.75rem; color: #1e293b; font-size: 0.9rem; }
+
+  /* Recommendations */
+  .rec-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px,1fr)); gap: 1rem; }
+  .rec-card { background: #1e293b; border: 1px solid #334155; border-radius: 0.875rem; padding: 1rem 1.25rem; }
+  .rec-category { font-weight: 800; font-size: 0.88rem; color: #818cf8; margin-bottom: 0.35rem; }
+  .rec-action   { font-size: 0.85rem; color: #94a3b8; line-height: 1.55; }
+
+  /* Notes */
+  .note { background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.2); border-radius: 0.5rem; padding: 0.6rem 0.9rem; font-size: 0.83rem; color: #a5b4fc; margin-bottom: 0.4rem; }
+
+  /* Footer */
+  .footer { text-align: center; padding: 2rem; color: #475569; font-size: 0.82rem; border-top: 1px solid #1e3a5f; margin-top: 3rem; }
+
+  @media (max-width:640px) {
+    .bar-label { width: 130px; font-size: 0.75rem; }
+    .stat-value { font-size: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>🔬 Load Test Report</h1>
+  <p>Cyber Essentials in Action — Infrastructure Utilisation Analysis</p>
+  <div class="badge-row">
+    <span class="badge-item">👥 150 Concurrent Players</span>
+    <span class="badge-item">⚡ 5 Cyber Attack Rounds</span>
+    <span class="badge-item">🎭 3 Cyber Quest Rounds (+ Video)</span>
+    <span class="badge-item">🟡 Simulation Mode</span>
+    <span class="badge-item">⏱️ 0.01s run time</span>
+  </div>
+</div>
+
+<!-- Key Numbers -->
+<div class="section">
+  <h2>📊 Session at a Glance</h2>
+  <div class="stat-grid">
+    
+    <div class="stat-card">
+      <div class="stat-emoji">👥</div>
+      <div class="stat-value">150<span class="stat-unit"></span></div>
+      <div class="stat-label">Concurrent Players</div>
+      <div class="stat-sub">+1 host/facilitator</div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-emoji">📡</div>
+      <div class="stat-value">151<span class="stat-unit"></span></div>
+      <div class="stat-label">Peak WS Connections</div>
+      <div class="stat-sub">Supabase Realtime</div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-emoji">✍️</div>
+      <div class="stat-value">2,358<span class="stat-unit"></span></div>
+      <div class="stat-label">DB Writes</div>
+      <div class="stat-sub">Total for full session</div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-emoji">📖</div>
+      <div class="stat-value">1,264<span class="stat-unit"></span></div>
+      <div class="stat-label">DB Reads</div>
+      <div class="stat-sub">Total for full session</div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-emoji">📤</div>
+      <div class="stat-value">87<span class="stat-unit">MB</span></div>
+      <div class="stat-label">Supabase Egress</div>
+      <div class="stat-sub">DB + Realtime only</div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-emoji">🎬</div>
+      <div class="stat-value">1800<span class="stat-unit">MB</span></div>
+      <div class="stat-label">Video Bandwidth</div>
+      <div class="stat-sub">From Vercel /public/videos</div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-emoji">🌐</div>
+      <div class="stat-value">1862<span class="stat-unit">MB</span></div>
+      <div class="stat-label">Total Vercel Bandwidth</div>
+      <div class="stat-sub">Pages + assets + video</div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-emoji">⚡</div>
+      <div class="stat-value">301<span class="stat-unit"></span></div>
+      <div class="stat-label">Vercel Fn Invocations</div>
+      <div class="stat-sub">Page loads + SSR</div>
+    </div>
+  </div>
+</div>
+
+<!-- Utilisation Bars -->
+<div class="section">
+  <h2>📈 Free-Tier Utilisation</h2>
+
+  <div class="util-box">
+    <div class="util-title">🗄️ Supabase Free Tier</div>
+    
+    <div class="bar-row">
+      <span class="bar-label">Realtime Connections (151 / 200)</span>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:75.5%;background:#f59e0b"></div>
+      </div>
+      <span class="bar-pct" style="color:#f59e0b">75.5%</span>
+    </div>
+    
+    <div class="bar-row">
+      <span class="bar-label">Egress per session as % of 5 GB/mo (86.69 MB)</span>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:1.69%;background:#22c55e"></div>
+      </div>
+      <span class="bar-pct" style="color:#22c55e">1.69%</span>
+    </div>
+    
+    <div class="bar-row">
+      <span class="bar-label">DB Operations as % of 500K/day (3,622 ops)</span>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:0.72%;background:#22c55e"></div>
+      </div>
+      <span class="bar-pct" style="color:#22c55e">0.72%</span>
+    </div>
+    <p style="font-size:0.8rem;color:#64748b;margin-top:0.75rem">
+      ℹ️ At this egress rate, the free tier supports ~<strong style="color:#a5b4fc">59</strong> full sessions/month before hitting the 5 GB egress cap.
+      Video egress (served by Vercel) is separate and covered by Vercel's 100 GB/mo allowance.
+    </p>
+  </div>
+
+  <div class="util-box">
+    <div class="util-title">▲ Vercel Hobby Free Tier</div>
+    
+    <div class="bar-row">
+      <span class="bar-label">Bandwidth per session as % of 100 GB/mo (1861.73 MB)</span>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:1.82%;background:#22c55e"></div>
+      </div>
+      <span class="bar-pct" style="color:#22c55e">1.82%</span>
+    </div>
+    
+    <div class="bar-row">
+      <span class="bar-label">Serverless Fn invocations as % of 100K/day (301)</span>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:0.301%;background:#22c55e"></div>
+      </div>
+      <span class="bar-pct" style="color:#22c55e">0.301%</span>
+    </div>
+    <p style="font-size:0.8rem;color:#64748b;margin-top:0.75rem">
+      ℹ️ Vercel is nowhere near its limits — the game is predominantly static client-side React with Supabase doing the heavy lifting.
+      You could run <strong style="color:#4ade80">hundreds of sessions/month</strong> within the Hobby free tier.
+    </p>
+  </div>
+</div>
+
+<!-- Warnings -->
+
+
+<!-- Latency Table -->
+<div class="section">
+  <h2>⏱️ Latency Profile</h2>
+  <table>
+    <thead><tr><th>Operation</th><th>p50</th><th>p95</th><th>p99</th><th>Mean</th></tr></thead>
+    <tbody>
+      
+    <tr>
+      <td>Realtime WS connection setup</td>
+      <td>182 ms</td>
+      <td>601 ms</td>
+      <td>605 ms</td>
+      <td>256 ms</td>
+    </tr>
+      
+    <tr>
+      <td>Realtime event delivery (server → client)</td>
+      <td>82 ms</td>
+      <td>480 ms</td>
+      <td>484 ms</td>
+      <td>148 ms</td>
+    </tr>
+      
+    <tr>
+      <td>Database write (INSERT / UPDATE)</td>
+      <td>37 ms</td>
+      <td>179 ms</td>
+      <td>184 ms</td>
+      <td>60 ms</td>
+    </tr>
+      
+    <tr>
+      <td>Database read (SELECT)</td>
+      <td>20 ms</td>
+      <td>119 ms</td>
+      <td>123 ms</td>
+      <td>35 ms</td>
+    </tr>
+      
+    <tr>
+      <td>Vercel page load (edge-served)</td>
+      <td>283 ms</td>
+      <td>899 ms</td>
+      <td>— ms</td>
+      <td>402 ms</td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Per-Round Breakdown -->
+<div class="section">
+  <h2>🎮 Per-Round Breakdown</h2>
+  <div style="overflow-x:auto">
+  <table>
+    <thead><tr><th>#</th><th>Mode</th><th>DB Writes</th><th>DB Reads</th><th>Realtime Msgs</th><th>Supabase Egress</th><th>Video (Vercel)</th></tr></thead>
+    <tbody>
+    <tr>
+      <td>1</td>
+      <td><span class="badge attack">ATTACK</span></td>
+      <td>287</td>
+      <td>158</td>
+      <td>21,895</td>
+      <td>6.8 MB</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td><span class="badge attack">ATTACK</span></td>
+      <td>287</td>
+      <td>158</td>
+      <td>21,895</td>
+      <td>6.8 MB</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td><span class="badge attack">ATTACK</span></td>
+      <td>287</td>
+      <td>158</td>
+      <td>21,895</td>
+      <td>6.8 MB</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td><span class="badge attack">ATTACK</span></td>
+      <td>287</td>
+      <td>158</td>
+      <td>21,895</td>
+      <td>6.8 MB</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td><span class="badge attack">ATTACK</span></td>
+      <td>287</td>
+      <td>158</td>
+      <td>21,895</td>
+      <td>6.8 MB</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td><span class="badge quest">QUEST</span></td>
+      <td>257</td>
+      <td>158</td>
+      <td>19,630</td>
+      <td>6.1 MB</td>
+      <td>600 MB</td>
+    </tr>
+    <tr>
+      <td>7</td>
+      <td><span class="badge quest">QUEST</span></td>
+      <td>257</td>
+      <td>158</td>
+      <td>19,630</td>
+      <td>6.1 MB</td>
+      <td>600 MB</td>
+    </tr>
+    <tr>
+      <td>8</td>
+      <td><span class="badge quest">QUEST</span></td>
+      <td>257</td>
+      <td>158</td>
+      <td>19,630</td>
+      <td>6.1 MB</td>
+      <td>600 MB</td>
+    </tr></tbody>
+  </table>
+  </div>
+</div>
+
+<!-- DB Operations Detail -->
+<div class="section">
+  <h2>🗄️ Database Operation Detail</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+    <div>
+      <h3>Writes (2,358 total)</h3>
+      <table>
+        <thead><tr><th>Operation</th><th>Count</th></tr></thead>
+        <tbody>
+          <tr><td>Room creates / updates</td><td>26</td></tr>
+          <tr><td>Player joins</td><td>150</td></tr>
+          <tr><td>Answer submissions</td><td>1,091</td></tr>
+          <tr><td>Score updates</td><td>1,091</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <h3>Reads (1,264 total)</h3>
+      <table>
+        <thead><tr><th>Operation</th><th>Count</th></tr></thead>
+        <tbody>
+          <tr><td>Room polls (late reconnects)</td><td>56</td></tr>
+          <tr><td>Player/leaderboard fetches</td><td>1,208</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Recommendations -->
+<div class="section">
+  <h2>🚀 Recommendations</h2>
+  <div class="rec-grid">
+    <div class="rec-card">
+      <div class="rec-category">Scale 201+ players</div>
+      <div class="rec-action">Upgrade Supabase to Pro ($25/mo) → 10,000 concurrent realtime connections, 8GB egress, unlimited DB requests.</div>
+    </div>
+    <div class="rec-card">
+      <div class="rec-category">Egress optimisation</div>
+      <div class="rec-action">Move scenario videos to a CDN (Cloudflare R2 free tier: 10GB/mo storage, 10M requests/mo, zero egress fees). Vercel bandwidth cost disappears for video.</div>
+    </div>
+    <div class="rec-card">
+      <div class="rec-category">Connection pooling</div>
+      <div class="rec-action">Enable Supabase connection pooler (PgBouncer) for REST API calls — reduces Postgres connections from N players to a small pool.</div>
+    </div>
+    <div class="rec-card">
+      <div class="rec-category">Multiple rooms</div>
+      <div class="rec-action">For events > 200 players, split into parallel rooms (each ≤ 100) running the same scenario — fits comfortably in free tier and distributes DB load.</div>
+    </div>
+    <div class="rec-card">
+      <div class="rec-category">Free tier longevity</div>
+      <div class="rec-action">At 200 players/session, Supabase DB ops use only 0.72% of the daily free allowance. You can run sessions worry-free every day.</div>
+    </div></div>
+</div>
+
+<!-- Notes -->
+<div class="section">
+  <h2>📌 Methodology Notes</h2>
+  <div class="note">⚠️  Scenario videos are served from Vercel /public/videos/, not Supabase — video bandwidth is Vercel egress, not Supabase egress. The Supabase egress figure above is DB + realtime only.</div><div class="note">📌  Supabase "database requests" count as 1 request per REST API call, not per SQL row.</div><div class="note">📌  Vercel bandwidth figures include raw asset sizes; Vercel compresses assets (gzip/Brotli) — actual wire transfer is ~30–40% of stated size.</div>
+  <div class="note">🔬 Latency values modelled from Supabase published benchmarks and community reports. Run with <code>--live</code> for measured values against your actual project.</div>
+</div>
+
+<div class="footer">
+  Generated by load-test/run.js · 2026-08-25T01:42:17.992Z · Cyber Essentials in Action (Digital)
+</div>
+</body>
+</html>

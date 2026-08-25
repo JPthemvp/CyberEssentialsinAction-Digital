@@ -187,15 +187,18 @@ export function ScenarioAnimation({ scenarioId, label }: { scenarioId: string; l
   if (!scene && !video) return null;
   return (
     <div>
-      {/* Real simulation video — click to play, no autoplay */}
+      {/* Real simulation video — autoplays muted when scenario loads */}
       {video && (
         <div style={{ marginBottom: '1rem' }}>
           <div style={{ color: '#64748b', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
             🎬 {label || 'Simulation'} — Real-World Video
           </div>
           <video
+            autoPlay
+            muted
             controls
-            preload="metadata"
+            playsInline
+            preload="auto"
             style={{ width: '100%', borderRadius: '0.875rem', background: '#000', display: 'block', maxHeight: 360 }}
           >
             <source src={video.src} type={video.type} />
