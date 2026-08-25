@@ -813,7 +813,7 @@ ${(qs.answers || []).sort((a, b) => (a.response_time_ms || 99999) - (b.response_
 
                 {/* Explanation */}
                 <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '0.75rem', padding: '1rem', marginBottom: '0.75rem', color: '#94a3b8', lineHeight: 1.6 }}>💡 {shuffledQ.explanation}</div>
-                {shuffledQ.funFact && <div style={{ background: 'rgba(99,102,241,0.1)', borderRadius: '0.75rem', padding: '0.75rem 1rem', marginBottom: '1rem', color: '#a5b4fc', fontSize: '0.9rem' }}>🤓 {shuffledQ.funFact}</div>}
+                {shuffledQ.funFact && <div style={{ background: 'rgba(99,102,241,0.1)', borderRadius: '0.75rem', padding: '0.75rem 1rem', marginBottom: '1rem', color: '#a5b4fc', fontSize: '0.9rem' }}>📊 {shuffledQ.funFact}</div>}
 
                 {/* Real-world example — shown only after facilitator clicks "Show Example" */}
                 {room.status === 'reveal_example' && (

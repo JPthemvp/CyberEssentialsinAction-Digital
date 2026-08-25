@@ -40,7 +40,7 @@ export const CYBER_ATTACK_QUESTIONS: AttackQuestion[] = [
     ],
     correctIndex: 0,
     explanation: 'Threat actors create urgency (e.g. time-limited offers) and pretend to be trusted parties like your payment service or management.',
-    funFact: 'Social engineering is the #2 top cybersecurity incident in Singapore organisations.',
+    funFact: 'Social engineering is the #2 top cybersecurity incident in Singapore organisations. (Source: CSA\'s Cybersecurity Health Report 2023)',
   },
   {
     id: 'a02',

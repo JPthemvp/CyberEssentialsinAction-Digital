@@ -544,7 +544,7 @@ export default function PlayPage() {
               <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{OPTION_LABELS[shuffledQ.correctIndex]}. {shuffledQ.options[shuffledQ.correctIndex]}</div>
             </div>
             <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '1rem', padding: '1rem 1.25rem', color: '#cbd5e1', lineHeight: 1.7, fontSize: '0.9rem', marginBottom: '0.5rem' }}>💡 {shuffledQ.explanation}</div>
-            {shuffledQ.funFact && <div style={{ background: 'rgba(99,102,241,0.1)', borderRadius: '1rem', padding: '0.875rem 1.25rem', color: '#a5b4fc', fontSize: '0.85rem', marginBottom: '0.5rem' }}>🤓 {shuffledQ.funFact}</div>}
+            {shuffledQ.funFact && <div style={{ background: 'rgba(99,102,241,0.1)', borderRadius: '1rem', padding: '0.875rem 1.25rem', color: '#a5b4fc', fontSize: '0.85rem', marginBottom: '0.5rem' }}>📊 {shuffledQ.funFact}</div>}
             {/* Real-world example — shown when facilitator reveals it */}
             {room.status === 'reveal_example' && (
               <QuestionExample questionId={CYBER_ATTACK_QUESTIONS[room.current_question_index]?.id} />
