@@ -450,12 +450,18 @@ ${(qs.answers || []).sort((a, b) => (a.response_time_ms || 99999) - (b.response_
         </button>
       )}
 
-      {/* End Game — floating health check button after game ends */}
+      {/* End Game — floating tool buttons after game ends */}
       {room.status === 'ended' && (
-        <a href="/game/health-check" target="_blank" rel="noopener noreferrer"
-          style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', zIndex: 100, background: 'linear-gradient(135deg,#4f46e5,#7c3aed)', border: 'none', color: '#fff', borderRadius: '0.875rem', padding: '0.7rem 1.35rem', fontSize: '0.95rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 20px rgba(79,70,229,0.5)', textDecoration: 'none', display: 'inline-block' }}>
-          🏥 Cyber Health Check
-        </a>
+        <div style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', zIndex: 100, display: 'flex', flexDirection: 'column', gap: '0.6rem', alignItems: 'flex-end' }}>
+          <a href="https://cetool-mvp.vercel.app/" target="_blank" rel="noopener noreferrer"
+            style={{ background: 'linear-gradient(135deg,#0891b2,#0e7490)', color: '#fff', textDecoration: 'none', borderRadius: '0.875rem', padding: '0.7rem 1.35rem', fontSize: '0.95rem', fontWeight: 700, boxShadow: '0 4px 20px rgba(8,145,178,0.5)', display: 'inline-block', whiteSpace: 'nowrap' }}>
+            💻 CE Readiness Scan
+          </a>
+          <a href="/game/health-check" target="_blank" rel="noopener noreferrer"
+            style={{ background: 'linear-gradient(135deg,#4f46e5,#7c3aed)', color: '#fff', textDecoration: 'none', borderRadius: '0.875rem', padding: '0.7rem 1.35rem', fontSize: '0.95rem', fontWeight: 700, boxShadow: '0 4px 20px rgba(79,70,229,0.5)', display: 'inline-block', whiteSpace: 'nowrap' }}>
+            🏥 Cyber Health Check
+          </a>
+        </div>
       )}
 
       {/* End Game confirm dialog */}
