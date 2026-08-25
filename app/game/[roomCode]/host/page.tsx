@@ -454,12 +454,14 @@ ${(qs.answers || []).sort((a, b) => (a.response_time_ms || 99999) - (b.response_
       {room.status === 'ended' && (
         <div style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', zIndex: 100, display: 'flex', flexDirection: 'column', gap: '0.6rem', alignItems: 'flex-end' }}>
           <a href="https://cetool-mvp.vercel.app/" target="_blank" rel="noopener noreferrer"
-            style={{ background: 'linear-gradient(135deg,#0891b2,#0e7490)', color: '#fff', textDecoration: 'none', borderRadius: '0.875rem', padding: '0.7rem 1.35rem', fontSize: '0.95rem', fontWeight: 700, boxShadow: '0 4px 20px rgba(8,145,178,0.5)', display: 'inline-block', whiteSpace: 'nowrap' }}>
-            💻 CE Readiness Scan (Device)
+            style={{ background: 'linear-gradient(135deg,#0891b2,#0e7490)', color: '#fff', textDecoration: 'none', borderRadius: '0.875rem', padding: '0.6rem 1.2rem', boxShadow: '0 4px 20px rgba(8,145,178,0.5)', display: 'block', textAlign: 'right' }}>
+            <div style={{ fontWeight: 700, fontSize: '0.92rem', whiteSpace: 'nowrap' }}>💻 CE Readiness Scan (Device)</div>
+            <div style={{ fontSize: '0.72rem', opacity: 0.85, marginTop: '0.15rem', whiteSpace: 'nowrap' }}>Quick 3-click scan on your device for Cyber Essentials</div>
           </a>
           <a href="/game/health-check" target="_blank" rel="noopener noreferrer"
-            style={{ background: 'linear-gradient(135deg,#4f46e5,#7c3aed)', color: '#fff', textDecoration: 'none', borderRadius: '0.875rem', padding: '0.7rem 1.35rem', fontSize: '0.95rem', fontWeight: 700, boxShadow: '0 4px 20px rgba(79,70,229,0.5)', display: 'inline-block', whiteSpace: 'nowrap' }}>
-            🏥 Cyber Health Check
+            style={{ background: 'linear-gradient(135deg,#4f46e5,#7c3aed)', color: '#fff', textDecoration: 'none', borderRadius: '0.875rem', padding: '0.6rem 1.2rem', boxShadow: '0 4px 20px rgba(79,70,229,0.5)', display: 'block', textAlign: 'right' }}>
+            <div style={{ fontWeight: 700, fontSize: '0.92rem', whiteSpace: 'nowrap' }}>🏥 Cyber Health Check</div>
+            <div style={{ fontSize: '0.72rem', opacity: 0.85, marginTop: '0.15rem', whiteSpace: 'nowrap' }}>Quick 5–10 min form — get your cyber health score</div>
           </a>
         </div>
       )}
