@@ -156,7 +156,7 @@ function GameHomePageInner() {
               IN ACTION
             </h2>
             <p style={{ color: '#94a3b8', fontSize: '1.1rem', marginTop: '0.75rem' }}>
-              A cybersecurity awareness game
+              Cyber incident training in your hands — play through real-world attack scenarios
             </p>
             <div style={{ display: 'inline-flex', alignItems: 'center', background: 'rgba(200,16,46,0.12)', border: '1px solid rgba(200,16,46,0.3)', borderRadius: '0.625rem', padding: '0.45rem 1rem', marginTop: '0.75rem' }}>
               <span style={{ color: '#fca5a5', fontSize: '0.85rem', fontWeight: 600 }}>
