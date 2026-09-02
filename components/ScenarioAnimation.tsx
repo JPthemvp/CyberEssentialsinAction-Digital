@@ -174,10 +174,10 @@ const scenes: Record<string, React.ReactNode> = {
 
 // Real simulation videos for scenarios that have them
 const SCENARIO_VIDEOS: Record<string, { src: string; type: string }> = {
-  A: { src: '/videos/scenario-a.mov', type: 'video/mp4' },
-  B: { src: '/videos/scenario-b.mov', type: 'video/mp4' },
-  C: { src: '/videos/scenario-c.mov', type: 'video/mp4' },
-  G: { src: '/videos/scenario-g.mov', type: 'video/mp4' },
+  A: { src: '/videos/scenario-a.mp4', type: 'video/mp4' },
+  B: { src: '/videos/scenario-b.mp4', type: 'video/mp4' },
+  C: { src: '/videos/scenario-c.mp4', type: 'video/mp4' },
+  G: { src: '/videos/scenario-g.mp4', type: 'video/mp4' },
   H: { src: '/videos/scenario-h.mp4', type: 'video/mp4' },
 };
 
@@ -201,9 +201,8 @@ export function ScenarioAnimation({ scenarioId, label }: { scenarioId: string; l
             preload="auto"
             style={{ width: '100%', borderRadius: '0.875rem', background: '#000', display: 'block', maxHeight: 360 }}
           >
-            <source src={video.src} type={video.type} />
-            <source src={video.src} type="video/quicktime" />
-            Your browser does not support this video format.
+            <source src={video.src} type="video/mp4" />
+            Your browser does not support MP4 video.
           </video>
         </div>
       )}
